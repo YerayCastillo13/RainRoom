@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b11">
+<title>RainRoom</title>
+<style>
+  :root {
+    --fg: #e9f0f8;
+    --muted: rgba(233, 240, 248, 0.55);
+    --glass: rgba(14, 22, 34, 0.38);
+    --glass-strong: rgba(14, 22, 34, 0.58);
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #9fd0ff;
+    --blur: 16px;
+    --radius: 20px;
+    --shadow: 0 14px 40px rgba(0, 0, 0, 0.36);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  body.light {
+    --fg: #15202d;
+    --muted: rgba(21, 32, 45, 0.55);
+    --glass: rgba(255, 255, 255, 0.36);
+    --glass-strong: rgba(255, 255, 255, 0.6);
+    --line: rgba(255, 255, 255, 0.65);
+    --accent: #2c6fc0;
+    --shadow: 0 14px 40px rgba(30, 50, 80, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #070b11; color: var(--fg);
+    font-family: var(--font);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  body.light { background: #c7d4e2; }
+
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* ---------- Widgets ---------- */
+  #widgets { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  .widget {
+    position: absolute; pointer-events: auto; touch-action: none;
+    min-width: 150px; padding: 12px 14px 14px;
+    background: var(--glass); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur));
+    transition: opacity .4s ease;
+  }
+  .widget.dragging { opacity: .9; }
+  .widget-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px; cursor: grab;
+  }
+  .widget-x {
+    background: none; border: 0; color: var(--muted); font-size: 14px;
+    width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  }
+  .clock-time { font-size: 46px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .clock-date { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .pomo-phase { font-size: 11px; color: var(--muted); text-align: center; letter-spacing: .08em; }
+  .pomo-time { font-size: 38px; font-weight: 300; font-variant-numeric: tabular-nums; text-align: center; }
+  .row { display: flex; gap: 8px; justify-content: center; margin-top: 6px; }
+  .btn {
+    background: var(--line); color: var(--fg); border: 0; border-radius: 999px;
+    padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  .btn:active { transform: scale(.96); }
+  .notes-area {
+    width: 210px; min-height: 110px; resize: none; border: 0; outline: none;
+    background: transparent; color: var(--fg); font: 14px/1.4 var(--font);
+    user-select: text; -webkit-user-select: text;
+  }
+  .notes-area::placeholder { color: var(--muted); }
+
+  /* ---------- Barra inferior: sonidos ---------- */
+  #dock {
+    position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
+    z-index: 10; display: flex; gap: 18px; align-items: flex-end;
+    padding: 12px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  .snd-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .snd {
+    width: 58px; height: 58px; border-radius: 50%;
+    background: var(--glass); border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur));
+    box-shadow: var(--shadow); color: var(--fg); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none; opacity: .5;
+    transition: transform .25s ease, opacity .5s ease, box-shadow .5s ease, background .5s ease;
+  }
+  .snd.on { opacity: 1; background: var(--glass-strong); box-shadow: 0 0 24px var(--accent), var(--shadow); }
+  .snd.drag { transform: scale(1.08); }
+  .snd svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .snd-label { font-size: 10px; letter-spacing: .08em; color: var(--muted); }
+  .snd-level {
+    position: absolute; left: 50%; bottom: 74px; transform: translateX(-50%);
+    width: 4px; height: 96px; border-radius: 2px; background: var(--line);
+    overflow: hidden; opacity: 0; transition: opacity .3s ease; pointer-events: none;
+  }
+  .snd-level.show { opacity: 1; }
+  .snd-level i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--accent); border-radius: 2px; height: 0%; }
+
+  /* ---------- Botones superiores y hoja ---------- */
+  .fab {
+    position: fixed; z-index: 10; width: 44px; height: 44px; border-radius: 50%;
+    background: var(--glass); border: 1px solid var(--line); color: var(--fg);
+    font-size: 19px; cursor: pointer; box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur));
+  }
+  #fabTop { top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; }
+  #fabAdd { top: calc(14px + env(safe-area-inset-top, 0px)); right: 66px; }
+
+  #sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    padding: 18px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    background: var(--glass-strong); border-top: 1px solid var(--line);
+    border-radius: 24px 24px 0 0; box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px);
+    transform: translateY(105%); transition: transform .4s cubic-bezier(.2,.8,.2,1);
+  }
+  #sheet.open { transform: translateY(0); }
+  #sheet h3 {
+    margin: 0 0 12px; font-size: 10px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+  }
+  .ctrl { display: flex; align-items: center; gap: 12px; margin: 10px 0; font-size: 14px; }
+  .ctrl label { width: 110px; flex-shrink: 0; }
+  .ctrl input[type=range] { flex: 1; accent-color: var(--accent); height: 28px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips button { background: var(--line); color: var(--fg); border: 0; border-radius: 999px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+  .chips button:active { transform: scale(.96); }
+
+  /* ---------- Intensidad ---------- */
+  #intensityBar {
+    position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 14px; z-index: 10;
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--line); box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(var(--blur)); backdrop-filter: blur(var(--blur));
+    font-size: 11px; letter-spacing: .08em; color: var(--muted);
+  }
+  #intensityBar input { width: 118px; accent-color: var(--accent); }
+
+  .toast {
+    position: fixed; left: 50%; top: 24%; transform: translateX(-50%);
+    background: var(--glass-strong); border: 1px solid var(--line);
+    padding: 8px 14px; border-radius: 999px; font-size: 13px;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 40;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<canvas id="scene" aria-hidden="true"></canvas>
+<div id="widgets"></div>
+
+<div id="intensityBar">
+  <span>LLUVIA</span>
+  <input type="range" id="intensity" min="0.1" max="1" step="0.05" value="0.7" aria-label="Intensidad de la lluvia">
+</div>
+
+<button class="fab" id="fabTop" aria-label="Cambiar tema" title="Tema">◐</button>
+<button class="fab" id="fabAdd" aria-label="Añadir widget" title="Añadir widget">＋</button>
+
+<nav id="dock" aria-label="Sonidos"></nav>
+
+<section id="sheet" aria-label="Ajustes">
+  <h3>Añadir widget</h3>
+  <div class="chips" id="addChips"></div>
+  <h3 style="margin-top:18px">Tema</h3>
+  <div class="ctrl">
+    <label for="modeToggle">Modo claro</label>
+    <input type="range" id="modeToggle" min="0" max="1" step="1" value="0" aria-label="Modo claro u oscuro">
+  </div>
+  <div class="ctrl">
+    <label for="glass">Transparencia</label>
+    <input type="range" id="glass" min="0.1" max="0.9" step="0.05" value="0.38" aria-label="Transparencia">
+  </div>
+  <div class="chips" style="margin-top:14px">
+    <button id="resetLayout">Restablecer widgets</button>
+    <button id="closeSheet">Cerrar</button>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* =========================================================
+     1. Utilidades
+     ========================================================= */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
+  const toast = (msg) => {
+    const t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove("show"), 1500);
+  };
+
+  /* =========================================================
+     2. Persistencia
+     ========================================================= */
+  const STORAGE_KEY = "rainroom.space.v3";
+  const Store = {
+    load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
+      catch (_) { return null; }
+    },
+    save(s) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (_) {}
+    },
+  };
+
+  /* =========================================================
+     3. Audio
+     Lluvia = impactos individuales (gotas) + capa de charco
+     (ruido marrón lento) + capa de tejado (agudos filtrados).
+     Trueno, viento y cola de reverb generada por código.
+     Añadir un sonido = añadir un objeto a SOUND_SOURCES.
+     ========================================================= */
+  let ctx = null, master = null, reverbIn = null;
+
+  const ensureAudio = () => {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.9;
+      master.connect(ctx.destination);
+      reverbIn = makeReverb(ctx, 1.8, 0.28);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  };
+
+  // Reverb corta generada por código (ruido con caída exponencial)
+  const makeReverb = (c, seconds, wet) => {
+    const len = Math.floor(c.sampleRate * seconds);
+    const buf = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5);
+    }
+    const input = c.createGain();
+    const conv = c.createConvolver();
+    conv.buffer = buf;
+    const g = c.createGain();
+    g.gain.value = wet;
+    input.connect(conv).connect(g).connect(master);
+    return input;
+  };
+
+  // Ruido marrón (más grave y natural que el blanco)
+  const brownBuffer = (c, seconds = 5) => {
+    const len = Math.floor(c.sampleRate * seconds);
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) {
+      const w = Math.random() * 2 - 1;
+      last = (last + 0.02 * w) / 1.02;
+      d[i] = last * 3.5;
+    }
+    return buf;
+  };
+
+  const loopBuf = (c, buf) => {
+    const s = c.createBufferSource();
+    s.buffer = buf; s.loop = true;
+    return s;
+  };
+
+  // Modulación aleatoria de un parámetro (variación irregular, no periódica)
+  const wander = (c, param, base, depth, rate) => {
+    let alive = true, t;
+    const step = () => {
+      if (!alive) return;
+      param.setTargetAtTime(base + rand(-depth, depth), c.currentTime, rate);
+      t = setTimeout(step, rand(400, 1800));
+    };
+    step();
+    return () => { alive = false; clearTimeout(t); };
+  };
+
+  const SOUND_SOURCES = {
+    rain: {
+      label: "Lluvia",
+      icon: "rain",
+      defaultVolume: 0.7,
+      build(c, out) {
+        const stops = [];
+
+        // Capa de charco: ruido marrón lento y grave
+        const pool = loopBuf(c, brownBuffer(c));
+        const pLp = c.createBiquadFilter(); pLp.type = "lowpass"; pLp.frequency.value = 600;
+        const pG = c.createGain(); pG.gain.value = 0.32;
+        pool.connect(pLp).connect(pG).connect(out);
+        stops.push(wander(c, pG.gain, 0.32, 0.1, 1.6));
+
+        // Capa de tejado / cristal: agudos filtrados, muy suaves
+        const roof = loopBuf(c, brownBuffer(c));
+        const rBp = c.createBiquadFilter(); rBp.type = "bandpass"; rBp.frequency.value = 3800; rBp.Q.value = 0.6;
+        const rG = c.createGain(); rG.gain.value = 0.05;
+        roof.connect(rBp).connect(rG).connect(out);
+        stops.push(wander(c, rG.gain, 0.05, 0.03, 2.2));
+
+        pool.start(); roof.start();
+
+
+        return () => {
+          alive = false;
+          stops.forEach((f) => f());
+          [pool, roof].forEach((s) => { try { s.stop(); } catch (_) {} });
+        };
+      },
+    },
+    thunder: {
+      label: "Trueno",
+      icon: "bolt",
+      defaultVolume: 0.3,
+      build(c, out) {
+        const n = loopBuf(c, brownBuffer(c));
+        const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 130;
+        const g = c.createGain(); g.gain.value = 0;
+        n.connect(lp).connect(g).connect(out);
+        n.start();
+        let alive = true, t;
+        const boom = () => {
+          if (!alive) return;
+          const now = c.currentTime;
+          const delay = rand(0, 0.9);
+          const peak = rand(0.5, 1);
+          const dur = rand(2.5, 5.5);
+          g.gain.cancelScheduledValues(now);
+          g.gain.setValueAtTime(0, now + delay);
+          g.gain.linearRampToValueAtTime(peak, now + delay + 0.12);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
+          t = setTimeout(boom, rand(9000, 25000));
+        };
+        t = setTimeout(boom, rand(3000, 8000));
+        return () => { alive = false; clearTimeout(t); try { n.stop(); } catch (_) {} };
+      },
+    },
+    wind: {
+      label: "Viento",
+      icon: "wind",
+      defaultVolume: 0.2,
+      build(c, out) {
+        const n = loopBuf(c, brownBuffer(c));
+        const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 420; bp.Q.value = 0.5;
+        const g = c.createGain(); g.gain.value = 0.5;
+        n.connect(bp).connect(g).connect(out);
+        const s1 = wander(c, bp.frequency, 420, 200, 1.6);
+        const s2 = wander(c, g.gain, 0.5, 0.35, 2.2);
+        n.start();
+        return () => { s1(); s2(); try { n.stop(); } catch (_) {} };
+      },
+    },
+  };
+
+  const Mixer = {
+    ch: {},
+
+    init(saved) {
+      Object.entries(SOUND_SOURCES).forEach(([id, def]) => {
+        const s = saved?.[id];
+        this.ch[id] = {
+          volume: s?.volume ?? def.defaultVolume,
+          enabled: s?.enabled ?? id === "rain",
+          stop: null, gain: null,
+        };
+      });
+    },
+    start(id) {
+      const c = this.ch[id];
+      if (c.stop) return;
+      const ac = ensureAudio();
+      c.gain = ac.createGain();
+      c.gain.gain.value = c.volume;
+      c.gain.connect(master);
+      c.gain.connect(reverbIn);
+      c.stop = SOUND_SOURCES[id].build(ac, c.gain);
+    },
+    stop(id) {
+      const c = this.ch[id];
+      if (!c.stop) return;
+      c.stop();
+      c.stop = null;
+      try { c.gain.disconnect(); } catch (_) {}
+      c.gain = null;
+    },
+    setEnabled(id, on) {
+      this.ch[id].enabled = on;
+      on ? this.start(id) : this.stop(id);
+    },
+    setVolume(id, v) {
+      const c = this.ch[id];
+      c.volume = v;
+      if (c.gain && ctx) c.gain.gain.setTargetAtTime(v, ctx.currentTime, 0.06);
+    },
+    resume() {
+      Object.entries(this.ch).forEach(([id, c]) => { if (c.enabled) this.start(id); });
+    },
+    toState() {
+      const o = {};
+      Object.entries(this.ch).forEach(([id, c]) => {
+        o[id] = { volume: +c.volume.toFixed(2), enabled: c.enabled };
+      });
+      return o;
+    },
+  };
+
+  /* =========================================================
+     4. Escena: cristal con gotas
+     - Lluvia de fondo en capas (paralaje)
+     - Gotas adheridas con forma alargada al resbalar
+     - Refracción: la gota muestra el fondo invertido (sprite de
+       referencia que se dibuja una vez por tamaño)
+     - Rastros con dos bordes brillantes
+     - Coalescencia: dos gotas que se tocan se funden
+     ========================================================= */
+  const canvas = $("#scene");
+  const g2 = canvas.getContext("2d");
+  let W = 0, H = 0, DPR = 1;
+  let intensity = 0.7;
+  let last = 0;
+  let isLight = false;
+
+  const par = { tx: 0, ty: 0, x: 0, y: 0 };
+
+  // Rendimiento: menos gotas en pantallas pequeñas o dispositivos lentos
+  const perfFactor = () => {
+    const small = Math.min(W, H) < 500;
+    const cores = navigator.hardwareConcurrency || 4;
+    return (small ? 0.6 : 1) * (cores <= 4 ? 0.8 : 1);
+  };
+
+  let layers = [];
+  const initLayers = () => {
+    const pf = perfFactor();
+    layers = [0.4, 0.7, 1.0].map((depth) => {
+      const count = Math.round((W * H) / (9000 / depth) * pf);
+      return {
+        depth,
+        drops: Array.from({ length: count }, () => ({
+          x: Math.random() * W, y: Math.random() * H,
+          v: rand(0.6, 1.4) * depth,
+          l: rand(8, 22) * depth,
+        })),
+      };
+    });
+  };
+
+  // Gotas pegadas al cristal
+  let beads = [];
+  const MAX_BEADS = 220;
+
+  const spawnBead = (x, y, big) => {
+    beads.push({
+      x, y,
+      r: big ? rand(3.5, 7) : rand(1.6, 3.6),
+      vy: 0,
+      grow: 0,
+      stretch: 0,
+      streak: [],       // rastro de la gota al resbalar
+      dead: false,
+    });
+    if (beads.length > MAX_BEADS) beads.splice(0, beads.length - MAX_BEADS);
+  };
+
+  // Coalescencia: si dos gotas se tocan, la pequeña se funde en la grande
+  const mergeBeads = () => {
+    for (let i = 0; i < beads.length; i++) {
+      const a = beads[i];
+      if (a.dead || a.vy > 0) continue;
+      for (let j = i + 1; j < beads.length; j++) {
+        const b = beads[j];
+        if (b.dead) continue;
+        const dx = a.x - b.x, dy = a.y - b.y;
+        if (dx * dx + dy * dy < (a.r + b.r) * (a.r + b.r) * 0.6) {
+          const big = a.r >= b.r ? a : b;
+          const small = big === a ? b : a;
+          big.r = Math.min(12, Math.sqrt(big.r * big.r + small.r * small.r));
+          small.dead = true;
+        }
+      }
+    }
+  };
+
+  // Física: una gota sólo resbala si su peso supera la adherencia
+  const updateBeads = (dt) => {
+    for (const b of beads) {
+      if (b.dead) continue;
+      b.grow = Math.min(1, b.grow + dt * 1.2);
+      const adherence = 0.5 + b.r * 0.12;
+      if (b.vy === 0 && Math.random() < 0.003 * intensity * (b.r / adherence)) {
+        b.vy = rand(0.15, 0.4);
+      }
+      if (b.vy > 0) {
+        // Aceleración con freno de superficie
+        b.vy = Math.min(b.vy + 0.02 * (b.r / adherence) * dt * 60, 3.4);
+        b.y += b.vy * dt * 60;
+        b.stretch = Math.min(1, b.stretch + dt * 2);
+        b.streak.push({ x: b.x + rand(-0.4, 0.4), y: b.y });
+        if (b.streak.length > 60) b.streak.shift();
+        // Cuando se detiene la gota, el rastro se desvanece poco a poco
+        if (Math.random() < 0.002) b.vy = 0;
+      } else {
+        b.stretch = Math.max(0, b.stretch - dt * 2);
+        if (b.streak.length) b.streak.shift();
+      }
+      if (b.y > H + 30) b.dead = true;
+    }
+    beads = beads.filter((b) => !b.dead);
+    mergeBeads();
+  };
+
+  // Refracción: se muestrea el "fondo" en la zona de la gota.
+  // Dibujamos un fondo de referencia y, dentro de cada gota, un
+  // recorte invertido (efecto lupa) para simular la lente de agua.
+  const drawBackdropSample = (x, y, r) => {
+    const sx = clamp(x - r, 0, W), sy = clamp(y - r, 0, H);
+    const sw = Math.max(1, Math.min(r * 2, W - sx)), sh = Math.max(1, Math.min(r * 2, H - sy));
+    g2.save();
+    g2.beginPath();
+    g2.arc(x, y, r, 0, Math.PI * 2);
+    g2.clip();
+    g2.translate(x, y);
+    g2.scale(-1, -1);            // invierte: el fondo aparece boca abajo, como en una gota real
+    g2.translate(-x, -y);
+    g2.fillStyle = isLight ? "rgba(255,255,255,0.14)" : "rgba(160,200,235,0.10)";
+    g2.fillRect(sx, sy, sw, sh);
+    g2.restore();
+  };
+
+  const drawBeads = () => {
+    for (const b of beads) {
+      const r = b.r * b.grow;
+      if (r < 0.5) continue;
+
+      // Rastro con dos bordes brillantes (agua que se desliza por el cristal)
+      if (b.streak.length > 2) {
+        const trailW = r * 0.9;
+        g2.beginPath();
+        g2.moveTo(b.streak[0].x - trailW, b.streak[0].y);
+        for (const p of b.streak) g2.lineTo(p.x - trailW, p.y);
+        for (let i = b.streak.length - 1; i >= 0; i--) g2.lineTo(b.streak[i].x + trailW, b.streak[i].y);
+        g2.fillStyle = "rgba(200,225,250,0.035)";
+        g2.fill();
+        g2.strokeStyle = "rgba(220,238,255,0.16)";
+        g2.lineWidth = 0.8;
+        g2.stroke();
+      }
+
+      // Forma: estirada en vertical mientras resbala, redonda en reposo
+      const sx = 1 - b.stretch * 0.12;
+      const sy = 1 + b.stretch * 0.45;
+      g2.save();
+      g2.translate(b.x, b.y);
+      g2.scale(sx, sy);
+
+      // Lente / refracción
+      drawBackdropSample(0, 0, r);
+
+      // Borde oscuro sutil y relieve
+      const grd = g2.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+      grd.addColorStop(0, "rgba(255,255,255,0.10)");
+      grd.addColorStop(0.7, "rgba(255,255,255,0.02)");
+      grd.addColorStop(1, "rgba(0,0,0,0.22)");
+      g2.beginPath();
+      g2.arc(0, 0, r, 0, Math.PI * 2);
+      g2.fillStyle = grd;
+      g2.fill();
+
+      // Especular: brillo nítido arriba a la izquierda
+      g2.beginPath();
+      g2.ellipse(-r * 0.36, -r * 0.4, r * 0.24, r * 0.16, -0.5, 0, Math.PI * 2);
+      g2.fillStyle = "rgba(255,255,255,0.8)";
+      g2.fill();
+      // Reflejo secundario inferior
+      g2.beginPath();
+      g2.arc(r * 0.25, r * 0.45, r * 0.08, 0, Math.PI * 2);
+      g2.fillStyle = "rgba(255,255,255,0.22)";
+      g2.fill();
+
+      g2.restore();
+    }
+  };
+
+  // Lluvia de fondo en capas con paralaje
+  const drawRain = (dt) => {
+    g2.lineCap = "round";
+    for (const L of layers) {
+      const ox = par.x * 16 * L.depth;
+      const oy = par.y * 8 * L.depth;
+      g2.beginPath();
+      for (const d of L.drops) {
+        d.y += d.v * 600 * intensity * dt;
+        d.x -= d.v * 80 * intensity * dt;
+        if (d.y > H + d.l) { d.y = -d.l; d.x = Math.random() * (W + 60); }
+        if (d.x < -40) d.x = W + 20;
+        const x = d.x + ox, y = d.y + oy;
+        g2.moveTo(x, y);
+        g2.lineTo(x - 1.1, y + d.l);
+        // Algunas gotas de esta capa se quedan pegadas al cristal
+        if (Math.random() < 0.0004 * intensity * L.depth) {
+          spawnBead(x, y, L.depth > 0.8);
+        }
+      }
+      g2.strokeStyle = isLight
+        ? `rgba(60,90,120,${0.10 + 0.08 * L.depth})`
+        : `rgba(180,205,230,${0.10 + 0.10 * L.depth})`;
+      g2.lineWidth = 0.6 + 0.4 * L.depth;
+      g2.stroke();
+    }
+  };
+
+  // Fondo: degradado profundo + reflejo que sigue al paralaje
+  const drawGlass = () => {
+    const bg = g2.createLinearGradient(0, 0, 0, H);
+    if (isLight) {
+      bg.addColorStop(0, "#d6e2ee");
+      bg.addColorStop(1, "#b5c6d8");
+    } else {
+      bg.addColorStop(0, "#0d1622");
+      bg.addColorStop(1, "#05080d");
+    }
+    g2.fillStyle = bg;
+    g2.fillRect(0, 0, W, H);
+    const rg = g2.createRadialGradient(
+      W * 0.5 + par.x * 60, H * 0.25 + par.y * 40, 10,
+      W * 0.5, H * 0.3, Math.max(W, H) * 0.7
+    );
+    rg.addColorStop(0, isLight ? "rgba(255,255,255,0.18)" : "rgba(120,160,210,0.10)");
+    rg.addColorStop(1, "rgba(0,0,0,0)");
+    g2.fillStyle = rg;
+    g2.fillRect(0, 0, W, H);
+  };
+
+  let flashT = 0;
+  const frame = (t) => {
+    const dt = Math.min(0.05, last ? (t - last) / 1000 : 0.016);
+    last = t;
+
+    par.x = lerp(par.x, par.tx, 0.06);
+    par.y = lerp(par.y, par.ty, 0.06);
+
+    drawGlass();
+    drawRain(dt);
+    updateBeads(dt);
+    drawBeads();
+
+    flashT -= dt;
+    if (flashT <= 0 && Math.random() < 0.0015 * intensity && !isLight) {
+      flashT = 0.1;
+      g2.fillStyle = "rgba(190,210,255,0.06)";
+      g2.fillRect(0, 0, W, H);
+    }
+
+    requestAnimationFrame(frame);
+  };
+
+  window.addEventListener("pointermove", (e) => {
+    par.tx = (e.clientX / W) * 2 - 1;
+    par.ty = (e.clientY / H) * 2 - 1;
+  });
+
+  // Giroscopio (móvil). iOS exige permiso desde un gesto del usuario.
+  const enableGyro = async () => {
+    try {
+      if (typeof DeviceOrientationEvent !== "undefined" &&
+          typeof DeviceOrientationEvent.requestPermission === "function") {
+        const r = await DeviceOrientationEvent.requestPermission();
+        if (r !== "granted") return;
+      }
+      window.addEventListener("deviceorientation", (e) => {
+        if (e.gamma == null) return;
+        par.tx = clamp(e.gamma / 30, -1, 1);
+        par.ty = clamp((e.beta - 45) / 30, -1, 1);
+      });
+    } catch (_) {}
+  };
+
+  /* =========================================================
+     5. Barra de sonidos
+     - Toque corto: activa / desactiva
+     - Arrastre vertical: volumen con indicador
+     ========================================================= */
+  const ICONS = {
+    rain: '<path d="M7 15a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 17 15"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/>',
+    bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+  };
+
+  const dock = $("#dock");
+
+  const refreshDock = () => {
+    $$(".snd").forEach((b) => {
+      const on = Mixer.ch[b.dataset.id].enabled;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+  };
+
+  const bindSound = (btn, id, levelEl) => {
+    const SENS = 170;
+    const fill = levelEl.querySelector("i");
+    let startY = 0, startV = 0, moved = false, down = false;
+
+    btn.addEventListener("pointerdown", (e) => {
+      down = true; moved = false;
+      startY = e.clientY;
+      startV = Mixer.ch[id].volume;
+      btn.setPointerCapture?.(e.pointerId);
+      btn.classList.add("drag");
+    });
+    btn.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      const dy = startY - e.clientY;
+      if (Math.abs(dy) > 6) moved = true;
+      if (!moved) return;
+      if (!Mixer.ch[id].enabled) { Mixer.setEnabled(id, true); refreshDock(); }
+      const v = clamp(startV + dy / SENS, 0, 1);
+      Mixer.setVolume(id, v);
+      fill.style.height = Math.round(v * 100) + "%";
+      levelEl.classList.add("show");
+    });
+    const end = () => {
+      if (!down) return;
+      down = false;
+      btn.classList.remove("drag");
+      levelEl.classList.remove("show");
+      if (!moved) {
+        Mixer.setEnabled(id, !Mixer.ch[id].enabled);
+        refreshDock();
+      }
+      persist();
+    };
+    btn.addEventListener("pointerup", end);
+    btn.addEventListener("pointercancel", end);
+  };
+
+  const buildDock = () => {
+    dock.innerHTML = "";
+    Object.entries(SOUND_SOURCES).forEach(([id, def]) => {
+      const wrap = document.createElement("div");
+      wrap.className = "snd-wrap";
+      wrap.innerHTML = `
+        <div class="snd-level"><i></i></div>
+        <button class="snd" data-id="${id}" aria-label="${def.label}" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[def.icon]}</svg>
+        </button>
+        <span class="snd-label">${def.label.toUpperCase()}</span>`;
+      dock.appendChild(wrap);
+      bindSound(wrap.querySelector(".snd"), id, wrap.querySelector(".snd-level"));
+    });
+    refreshDock();
+  };
+
+  /* =========================================================
+     6. Widgets (registro de tipos)
+     ========================================================= */
+  const WIDGET_TYPES = {};
+  const registerWidget = (def) => { WIDGET_TYPES[def.type] = def; };
+
+  registerWidget({
+    type: "clock",
+    title: "Reloj",
+    defaults: () => ({}),
+    mount(body) {
+      body.innerHTML = `<div class="clock-time"></div><div class="clock-date"></div>`;
+      const tEl = body.querySelector(".clock-time");
+      const dEl = body.querySelector(".clock-date");
+      const fT = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" });
+      const fD = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
+      const tick = () => {
+        const now = new Date();
+        tEl.textContent = fT.format(now);
+        dEl.textContent = fD.format(now);
+      };
+      tick();
+      const id = setInterval(tick, 10000);
+      return () => clearInterval(id);
+    },
+  });
+
+  registerWidget({
+    type: "pomodoro",
+    title: "Pomodoro",
+    defaults: () => ({ work: 25, rest: 5 }),
+    mount(body, cfg) {
+      let phase = "work", remaining = cfg.work * 60, running = false, raf = 0, last = 0;
+      body.innerHTML = `
+        <div class="pomo-phase"></div>
+        <div class="pomo-time"></div>
+        <div class="row">
+          <button class="btn" data-a="t">Iniciar</button>
+          <button class="btn" data-a="r">Reiniciar</button>
+        </div>`;
+      const pEl = body.querySelector(".pomo-phase");
+      const tEl = body.querySelector(".pomo-time");
+      const bT = body.querySelector('[data-a="t"]');
+
+      const render = () => {
+        const m = Math.floor(remaining / 60), s = Math.floor(remaining % 60);
+        tEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        pEl.textContent = phase === "work" ? "CONCENTRACIÓN" : "DESCANSO";
+      };
+      const loop = (ts) => {
+        if (!running) return;
+        const dt = last ? (ts - last) / 1000 : 0;
+        last = ts;
+        remaining -= dt;
+        if (remaining <= 0) {
+          phase = phase === "work" ? "rest" : "work";
+          remaining = (phase === "work" ? cfg.work : cfg.rest) * 60;
+          toast(phase === "work" ? "Vuelta a concentrarte" : "Hora de descansar");
+        }
+        render();
+        raf = requestAnimationFrame(loop);
+      };
+      const setRunning = (on) => {
+        running = on;
+        bT.textContent = on ? "Pausar" : "Iniciar";
+        if (on) { last = 0; raf = requestAnimationFrame(loop); }
+        else cancelAnimationFrame(raf);
+      };
+      bT.addEventListener("click", () => setRunning(!running));
+      body.querySelector('[data-a="r"]').addEventListener("click", () => {
+        setRunning(false); phase = "work"; remaining = cfg.work * 60; render();
+      });
+      render();
+      return () => setRunning(false);
+    },
+  });
+
+  registerWidget({
+    type: "notes",
+    title: "Notas",
+    defaults: () => ({ text: "" }),
+    mount(body, cfg) {
+      body.innerHTML = `<textarea class="notes-area" placeholder="Escribe algo…" aria-label="Notas"></textarea>`;
+      const ta = body.querySelector("textarea");
+      ta.value = cfg.text || "";
+      let t;
+      ta.addEventListener("input", () => {
+        cfg.text = ta.value;
+        clearTimeout(t);
+        t = setTimeout(persist, 400);
+      });
+      return () => {};
+    },
+  });
+
+  /* =========================================================
+     7. Gestor de widgets
+     ========================================================= */
+  const layer = $("#widgets");
+  const instances = new Map();
+
+  const place = (el, x, y) => {
+    const maxX = Math.max(8, window.innerWidth - el.offsetWidth - 8);
+    const maxY = Math.max(60, window.innerHeight - el.offsetHeight - 120);
+    el.style.left = clamp(x, 8, maxX) + "px";
+    el.style.top = clamp(y, 60, maxY) + "px";
+  };
+
+  const enableDrag = (el) => {
+    const head = el.querySelector(".widget-head");
+    let drag = false, ox = 0, oy = 0;
+    head.addEventListener("pointerdown", (e) => {
+      drag = true;
+      el.classList.add("dragging");
+      const r = el.getBoundingClientRect();
+      ox = e.clientX - r.left; oy = e.clientY - r.top;
+      head.setPointerCapture?.(e.pointerId);
+    });
+    head.addEventListener("pointermove", (e) => {
+      if (drag) place(el, e.clientX - ox, e.clientY - oy);
+    });
+    const end = () => {
+      if (!drag) return;
+      drag = false;
+      el.classList.remove("dragging");
+      persist();
+    };
+    head.addEventListener("pointerup", end);
+    head.addEventListener("pointercancel", end);
+  };
+
+  const mountWidget = (w) => {
+    const def = WIDGET_TYPES[w.type];
+    if (!def) return;
+    const el = document.createElement("section");
+    el.className = "widget";
+    el.style.left = (w.x ?? 28) + "px";
+    el.style.top = (w.y ?? 120) + "px";
+    el.innerHTML = `
+      <div class="widget-head">
+        <span>${def.title}</span>
+        <button class="widget-x" aria-label="Quitar ${def.title}">✕</button>
+      </div>
+      <div class="widget-body"></div>`;
+    layer.appendChild(el);
+    const unmount = def.mount(el.querySelector(".widget-body"), w.cfg) || (() => {});
+    instances.set(w.id, { el, unmount, cfg: w.cfg });
+    el.querySelector(".widget-x").addEventListener("click", () => removeWidget(w.id));
+    enableDrag(el);
+    place(el, parseFloat(el.style.left), parseFloat(el.style.top));
+  };
+
+  const removeWidget = (id) => {
+    const inst = instances.get(id);
+    if (!inst) return;
+    inst.unmount();
+    inst.el.remove();
+    instances.delete(id);
+    state.widgets = state.widgets.filter((w) => w.id !== id);
+    persist();
+    toast("Widget quitado");
+  };
+
+  const addWidget = (type) => {
+    const def = WIDGET_TYPES[type];
+    if (!def) return;
+    const w = {
+      id: uid(), type,
+      x: 28 + Math.random() * 60,
+      y: 130 + Math.random() * 80,
+      cfg: def.defaults(),
+    };
+    state.widgets.push(w);
+    mountWidget(w);
+    persist();
+    toast(`${def.title} añadido`);
+    closeSheet();
+  };
+
+  const renderAddChips = () => {
+    const box = $("#addChips");
+    box.innerHTML = "";
+    Object.values(WIDGET_TYPES).forEach((def) => {
+      const b = document.createElement("button");
+      b.textContent = "+ " + def.title;
+      b.addEventListener("click", () => addWidget(def.type));
+      box.appendChild(b);
+    });
+  };
+
+  /* =========================================================
+     8. Estado y persistencia
+     ========================================================= */
+  const DEFAULT_STATE = () => ({
+    intensity: 0.7,
+    theme: { light: false, glass: 0.38 },
+    sounds: {},
+    widgets: [
+      { id: uid(), type: "clock", x: 28, y: 130, cfg: WIDGET_TYPES.clock.defaults() },
+    ],
+  });
+
+  let state = Store.load() || DEFAULT_STATE();
+  state.theme ||= { light: false, glass: 0.38 };
+  state.widgets ||= [];
+  if (typeof state.intensity !== "number") state.intensity = 0.7;
+
+  const persist = () => {
+    state.widgets.forEach((w) => {
+      const inst = instances.get(w.id);
+      if (inst) {
+        w.x = parseFloat(inst.el.style.left);
+        w.y = parseFloat(inst.el.style.top);
+        w.cfg = inst.cfg;
+      }
+    });
+    state.sounds = Mixer.toState();
+    state.intensity = intensity;
+    Store.save(state);
+  };
+
+  /* =========================================================
+     9. Tema
+     ========================================================= */
+  const applyTheme = () => {
+    isLight = !!state.theme.light;
+    document.body.classList.toggle("light", isLight);
+    const a = state.theme.glass;
+    const root = document.documentElement.style;
+    root.setProperty("--glass", isLight ? `rgba(255,255,255,${a})` : `rgba(14,22,34,${a})`);
+    root.setProperty("--glass-strong", isLight
+      ? `rgba(255,255,255,${Math.min(0.9, a + 0.22)})`
+      : `rgba(14,22,34,${Math.min(0.9, a + 0.2)})`);
+  };
+
+  /* =========================================================
+     10. Hoja inferior y controles
+     ========================================================= */
+  const sheet = $("#sheet");
+  const openSheet = () => sheet.classList.add("open");
+  const closeSheet = () => sheet.classList.remove("open");
+
+  const modeToggle = $("#modeToggle");
+  const glassRange = $("#glass");
+  const intensityRange = $("#intensity");
+
+  const syncSheet = () => {
+    modeToggle.value = state.theme.light ? 1 : 0;
+    glassRange.value = state.theme.glass;
+  };
+
+  $("#fabAdd").addEventListener("click", openSheet);
+  $("#closeSheet").addEventListener("click", closeSheet);
+  $("#fabTop").addEventListener("click", () => {
+    state.theme.light = !state.theme.light;
+    applyTheme(); syncSheet(); persist();
+  });
+
+  modeToggle.addEventListener("input", () => {
+    state.theme.light = modeToggle.value === "1";
+    applyTheme();
+  });
+  modeToggle.addEventListener("change", persist);
+
+  glassRange.addEventListener("input", () => {
+    state.theme.glass = parseFloat(glassRange.value);
+    applyTheme();
+  });
+  glassRange.addEventListener("change", persist);
+
+  intensityRange.addEventListener("input", () => {
+    intensity = parseFloat(intensityRange.value);
+  });
+  intensityRange.addEventListener("change", persist);
+
+  $("#resetLayout").addEventListener("click", () => {
+    instances.forEach((i) => { i.unmount(); i.el.remove(); });
+    instances.clear();
+    state.widgets = DEFAULT_STATE().widgets;
+    state.widgets.forEach(mountWidget);
+    persist();
+    closeSheet();
+    toast("Widgets restablecidos");
+  });
+
+  document.addEventListener("pointerdown", (e) => {
+    if (sheet.classList.contains("open") && !sheet.contains(e.target) && e.target !== $("#fabAdd")) {
+      closeSheet();
+    }
+  });
+
+  /* =========================================================
+     11. Inicialización
+     ========================================================= */
+  intensity = state.intensity;
+  intensityRange.value = intensity;
+  Mixer.init(state.sounds);
+  buildDock();
+  applyTheme();
+  syncSheet();
+  renderAddChips();
+  state.widgets.forEach(mountWidget);
+
+  // Autoplay: el audio arranca con el primer gesto del usuario
+  const unlock = () => {
+    Mixer.resume();
+    enableGyro();
+    refreshDock();
+    window.removeEventListener("pointerdown", unlock);
+    window.removeEventListener("keydown", unlock);
+  };
+  window.addEventListener("pointerdown", unlock);
+  window.addEventListener("keydown", unlock);
+
+  const resize = () => {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    g2.setTransform(DPR, 0, 0, DPR, 0, 0);
+    initLayers();
+  };
+
+  window.addEventListener("resize", () => {
+    resize();
+    instances.forEach((i) => place(i.el, parseFloat(i.el.style.left), parseFloat(i.el.style.top)));
+  });
+
+  window.addEventListener("pagehide", persist);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") persist();
+  });
+
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
