@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s),clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),rand=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t;
 const KEY="rainroom.v4";let S={int:.7,room:"city",mix:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)))}catch(e){}
-const save=()=>{S.mix=S.mix||{};S.mix[S.room]={snd:M.state(),int:S.int};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const save=()=>{S.mix=S.mix||{};S.mix[S.room]={snd:M.state(),int:S.int,w:stateW()};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 /* ---------- AUDIO ---------- */
 let ctx,master,rainBuf=null,boomFn=null;
@@ -50,7 +50,7 @@ const M={ch:{},
 
 /* ---------- INTERFAZ: dock + hoja de salas y mezcla (sliders grandes, sin arrastres) ---------- */
 const roomDef=()=>ROOMS.concat([PHOTO]).find(r=>r.id===S.room)||ROOMS[0];
-const dock=$("#dock"),sheet=$("#sheet"),tg={},mixEl={},thumbs={};
+const dock=$("#dock"),sheet=$("#sheet"),tg={},mixEl={},thumbs={},imgs={};
 const buildUI=()=>{
  for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;
   b.onclick=()=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);syncUI();save()};dock.appendChild(b);tg[k]=b;
@@ -61,11 +61,11 @@ const buildUI=()=>{
 const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
  for(const r of photo?ROOMS.concat([PHOTO]):ROOMS){const b=document.createElement("button");b.className="card"+(r.id===S.room?" on":"");
   let c=thumbs[r.id];if(!c){c=thumbs[r.id]=document.createElement("canvas");c.width=160;c.height=200;const x=c.getContext("2d");
-   if(r.id==="photo"){const k=Math.max(160/photo.width,200/photo.height);x.drawImage(photo,(160-photo.width*k)/2,(200-photo.height*k)/2,photo.width*k,photo.height*k)}else r.draw(x,160,200)}
+   const im=r.id==="photo"?photo:imgs[r.id];if(im){const k=Math.max(160/im.width,200/im.height);x.drawImage(im,(160-im.width*k)/2,(200-im.height*k)/2,im.width*k,im.height*k)}else r.draw(x,160,200)}
   const cc=document.createElement("canvas");cc.width=160;cc.height=200;cc.getContext("2d").drawImage(c,0,0);
   const sp=document.createElement("span");sp.textContent=r.name;b.append(cc,sp);b.onclick=()=>{if(r.id!==S.room)selectRoom(r.id)};box.appendChild(b)}};
-const syncUI=()=>{for(const k in SRC){tg[k].classList.toggle("on",M.ch[k].on);mixEl[k].value=M.ch[k].on?M.ch[k].v:0}$("#int").value=S.int;renderRooms()};
-const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);buildScene();sizeDrops();syncUI();save()};
+const syncUI=()=>{for(const k in SRC){tg[k].classList.toggle("on",M.ch[k].on);mixEl[k].value=M.ch[k].on?M.ch[k].v:0}$("#int").value=S.int;renderRooms();syncW()};
+const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
  if(first)return go();$("#veil").classList.add("on");setTimeout(()=>{go();$("#veil").classList.remove("on")},380)};
 
 /* ---------- ESCENA DE FONDO ---------- */
@@ -112,8 +112,8 @@ const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.
 
 let W,H,photo=null;
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
-const buildScene=()=>{const L=1024,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
- if(photo&&S.room==="photo"){const k=Math.max(sw/photo.width,sh2/photo.height),pw=photo.width*k,ph=photo.height*k;c.drawImage(photo,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
+const buildScene=()=>{const L=1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
+ const im=S.room==="photo"?photo:imgs[S.room];if(im){const k=Math.max(sw/im.width,sh2/im.height),pw=im.width*k,ph=im.height*k;c.drawImage(im,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
  upl(0,tS,sc);upl(1,tB,bc)};
 
@@ -149,6 +149,21 @@ const sim=dt=>{const I=S.int,cap=lerp(90,340,I),w=wet.width,h=wet.height;
  fadeT+=dt;if(fadeT>.4){fadeT=0;wc.fillStyle="rgba(128,128,0,.05)";wc.fillRect(0,0,w,h)}};
 const compose=()=>{dc.drawImage(wet,0,0);for(const b of B){const s=b.v>0?Math.min(1,b.v/2):0,w=2*b.r*(1-.15*s),h=2*b.r*(1+.55*s);dc.drawImage(spr,b.x-w/2,b.y-h/2,w,h)}};
 
+/* ---------- WIDGETS: una instancia por tipo y sala, arrastrables, posición guardada en proporción ---------- */
+const wl=$("#wl"),wi={},wchip={};
+const chime=()=>{const c=ensure(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=660;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(1e-4,t+1.6);o.connect(g).connect(master);o.start(t);o.stop(t+1.7)};
+const placeW=o=>{o.el.style.left=o.x*Math.max(0,W-o.el.offsetWidth)+"px";o.el.style.top=o.y*Math.max(0,H-o.el.offsetHeight-96)+"px"};
+const addW=(t,st)=>{if(wi[t]||!WIDGETS[t])return;const d=WIDGETS[t],o=wi[t]={x:st&&st.x!=null?st.x:.08,y:st&&st.y!=null?st.y:.14,cfg:Object.assign(d.cfg(),st&&st.cfg)};
+ const e=o.el=document.createElement("section");e.className="wd";e.setAttribute("aria-label",d.name);wl.appendChild(e);o.un=d.mount(e,o.cfg,{save,chime})||(()=>{});placeW(o);
+ e.onpointerdown=ev=>{if(ev.target.closest("button,textarea,input"))return;const r=e.getBoundingClientRect(),dx=ev.clientX-r.left,dy=ev.clientY-r.top;e.setPointerCapture(ev.pointerId);e.classList.add("d");
+  e.onpointermove=m=>{o.x=clamp((m.clientX-dx)/Math.max(1,W-e.offsetWidth),0,1);o.y=clamp((m.clientY-dy)/Math.max(1,H-e.offsetHeight-96),0,1);placeW(o)};
+  e.onpointerup=e.onpointercancel=()=>{e.onpointermove=null;e.classList.remove("d");save()}}};
+const delW=t=>{const o=wi[t];if(!o)return;o.un();o.el.remove();delete wi[t]};
+const loadW=w=>{Object.keys(wi).forEach(delW);for(const t in w)addW(t,w[t])};
+const stateW=()=>{const o={};for(const t in wi)o[t]={x:+wi[t].x.toFixed(3),y:+wi[t].y.toFixed(3),cfg:wi[t].cfg};return o};
+const syncW=()=>{for(const t in wchip)wchip[t].classList.toggle("on",!!wi[t])};
+const buildW=()=>{for(const t in WIDGETS){const b=document.createElement("button");b.className="chip";b.textContent=WIDGETS[t].name;b.onclick=()=>{wi[t]?delW(t):addW(t);syncW();save()};$("#wsel").appendChild(b);wchip[t]=b}};
+
 /* ---------- PARALAJE ---------- */
 const par={tx:0,ty:0,x:0,y:0};
 window.addEventListener("pointermove",e=>{par.tx=e.clientX/W*2-1;par.ty=e.clientY/H*2-1});
@@ -173,12 +188,12 @@ $("#fabX").onclick=()=>{photo=null;delete thumbs.photo;$("#fabX").style.display=
 
 /* ---------- ARRANQUE ---------- */
 const resize=()=>{const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);buildScene();sizeDrops()};
-addEventListener("resize",resize);
-M.init();buildUI();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value};rg.onchange=save;
+addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
+M.init();buildUI();buildW();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value};rg.onchange=save;
 let idle;const wake=()=>{$("#ui").classList.remove("h");clearTimeout(idle);idle=setTimeout(()=>{if(!sheet.classList.contains("open"))$("#ui").classList.add("h")},5000)};
 addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake();
 const unlock=()=>{removeEventListener("pointerdown",unlock);$("#msg").style.opacity=0;gyro();rainP.then(()=>{M.resume();syncUI()})};
 addEventListener("pointerdown",unlock);
 addEventListener("pagehide",save);document.addEventListener("pointerdown",e=>{if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
-resize();selectRoom(S.room,true);idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
+resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image();im.onload=()=>{imgs[r.id]=im;delete thumbs[r.id];if(S.room===r.id)buildScene();renderRooms()};im.src=r.src}});idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
 })();
