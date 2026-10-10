@@ -13,6 +13,7 @@ Importa la carpeta como proyecto estático (sin build). `vercel.json` ya está i
 
 ## Estructura
 - `index.html`, `css/style.css`, `js/app.js`: la aplicación
+- `js/rooms.js`: registro de salas (fondo + mezcla de sonidos); añadir una sala = añadir un objeto
 - `assets/audio/rain.mp3`: grabación de lluvia en bucle
 - `assets/scenes/`: reservado para fotos de fondo (el selector de salas llega en la fase 2)
 

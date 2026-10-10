@@ -1,8 +1,8 @@
 (()=>{"use strict";
 const $=s=>document.querySelector(s),clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),rand=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t;
-const KEY="rainroom.v4";let S={int:.7,snd:{}};
+const KEY="rainroom.v4";let S={int:.7,room:"city",mix:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)))}catch(e){}
-const save=()=>{S.snd=M.state();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const save=()=>{S.mix=S.mix||{};S.mix[S.room]={snd:M.state(),int:S.int};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 /* ---------- AUDIO ---------- */
 let ctx,master,rainBuf=null,boomFn=null;
@@ -28,44 +28,50 @@ const SRC={
  wind:{l:"Viento",v:.2,i:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="bandpass";f.frequency.value=420;f.Q.value=.5;g.gain.value=.5;n.connect(f).connect(g).connect(o);
    const a=wander(c,f.frequency,420,200,1.6),b=wander(c,g.gain,.5,.35,2.2);n.start();return()=>{a();b();try{n.stop()}catch(e){}}}}};
+Object.assign(SRC,{
+ fire:{l:"Chimenea",v:.5,i:'<path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 3-7 .5 1.5 1.5 2 2 1.5z"/>',
+  build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;g.gain.value=.5;n.connect(f).connect(g).connect(o);n.start();let a=true,t;
+   const pop=()=>{if(!a)return;const s=c.createBufferSource(),b=c.createBuffer(1,c.sampleRate*.04,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);s.buffer=b;const q=c.createBiquadFilter(),h=c.createGain();q.type="bandpass";q.frequency.value=rand(1200,4500);q.Q.value=1.5;h.gain.value=rand(.15,.9);s.connect(q).connect(h).connect(o);s.start();t=setTimeout(pop,rand(40,500)*(Math.random()<.2?.2:1))};pop();
+   return()=>{a=false;clearTimeout(t);try{n.stop()}catch(e){}}}},
+ traffic:{l:"Tráfico",v:.35,i:'<path d="M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v1.5M17 19v1.5"/>',
+  build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=260;g.gain.value=.6;n.connect(f).connect(g).connect(o);n.start();const wd=wander(c,g.gain,.6,.3,2.5);let a=true,t;
+   const pass=()=>{if(!a)return;const s=noise(c),b=c.createBiquadFilter(),h=c.createGain(),w0=c.currentTime,d=rand(2,4);b.type="bandpass";b.Q.value=2;b.frequency.setValueAtTime(rand(300,500),w0);b.frequency.linearRampToValueAtTime(rand(700,1100),w0+d);h.gain.setValueAtTime(0,w0);h.gain.linearRampToValueAtTime(rand(.5,1),w0+d*.45);h.gain.linearRampToValueAtTime(0,w0+d);s.connect(b).connect(h).connect(o);s.start(w0);s.stop(w0+d+.1);t=setTimeout(pass,rand(3000,9000))};t=setTimeout(pass,1500);
+   return()=>{a=false;wd();clearTimeout(t);try{n.stop()}catch(e){}}}}});
+let unlocked=false;
 const M={ch:{},
- init(){for(const k in SRC){const s=S.snd[k];this.ch[k]={v:s?s.v:SRC[k].v,on:s?s.on:k==="rain",stop:null,g:null}}},
+ init(){for(const k in SRC)this.ch[k]={v:SRC[k].v,on:false,stop:null,g:null}},
  start(k){const c=this.ch[k];if(c.stop)return;const a=ensure();c.g=a.createGain();c.g.gain.value=c.v;c.g.connect(master);c.stop=SRC[k].build(a,c.g)},
  halt(k){const c=this.ch[k];if(!c.stop)return;c.stop();c.stop=null;try{c.g.disconnect()}catch(e){}},
- set(k,on){this.ch[k].on=on;on?this.start(k):this.halt(k)},
+ set(k,on){this.ch[k].on=on;if(unlocked)on?this.start(k):this.halt(k)},
  vol(k,v){const c=this.ch[k];c.v=v;if(c.g)c.g.gain.setTargetAtTime(v,ctx.currentTime,.06)},
- resume(){for(const k in this.ch)if(this.ch[k].on)this.start(k)},
+ apply(m){for(const k in this.ch){const s=m[k]||{v:this.ch[k].v,on:false};this.vol(k,s.v);this.set(k,!!s.on&&s.v>0)}},
+ resume(){unlocked=true;for(const k in this.ch)if(this.ch[k].on)this.start(k)},
  state(){const o={};for(const k in this.ch)o[k]={v:+this.ch[k].v.toFixed(2),on:this.ch[k].on};return o}};
 
-/* ---------- DOCK: toque = on/off, arrastre vertical = volumen ---------- */
-const dock=$("#dock");
-const refresh=()=>document.querySelectorAll(".snd").forEach(b=>b.classList.toggle("on",M.ch[b.dataset.k].on));
-const bind=(b,k,lv)=>{let y0,v0,mv,dn;const fill=lv.firstChild;
- b.onpointerdown=e=>{dn=true;mv=false;y0=e.clientY;v0=M.ch[k].v;b.setPointerCapture(e.pointerId);b.classList.add("d")};
- b.onpointermove=e=>{if(!dn)return;const dy=y0-e.clientY;if(Math.abs(dy)>6)mv=true;if(!mv)return;if(!M.ch[k].on){M.set(k,true);refresh()}const v=clamp(v0+dy/170,0,1);M.vol(k,v);fill.style.height=v*100+"%";lv.classList.add("s")};
- const end=()=>{if(!dn)return;dn=false;b.classList.remove("d");lv.classList.remove("s");if(!mv){M.set(k,!M.ch[k].on);refresh()}save()};
- b.onpointerup=end;b.onpointercancel=end};
-const build=()=>{for(const k in SRC){const w=document.createElement("div");w.className="w";
- w.innerHTML=`<div class="lv"><i></i></div><button class="snd" data-k="${k}" aria-label="${SRC[k].l}"><svg viewBox="0 0 24 24">${SRC[k].i}</svg></button><small>${SRC[k].l}</small>`;
- dock.appendChild(w);bind(w.querySelector(".snd"),k,w.querySelector(".lv"))}refresh()};
+/* ---------- INTERFAZ: dock + hoja de salas y mezcla (sliders grandes, sin arrastres) ---------- */
+const roomDef=()=>ROOMS.concat([PHOTO]).find(r=>r.id===S.room)||ROOMS[0];
+const dock=$("#dock"),sheet=$("#sheet"),tg={},mixEl={},thumbs={};
+const buildUI=()=>{
+ for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;
+  b.onclick=()=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);syncUI();save()};dock.appendChild(b);tg[k]=b;
+  const r=document.createElement("label");r.className="row";r.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg><span>${SRC[k].l}</span><input type="range" min="0" max="1" step=".01" aria-label="Volumen de ${SRC[k].l}">`;
+  const inp=r.querySelector("input");inp.oninput=()=>{const v=+inp.value;M.vol(k,v);M.set(k,v>.02);tg[k].classList.toggle("on",v>.02)};inp.onchange=save;$("#mix").appendChild(r);mixEl[k]=inp}
+ const m=document.createElement("button");m.className="snd";m.setAttribute("aria-label","Salas y mezcla");m.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
+ m.onclick=()=>sheet.classList.add("open");dock.appendChild(m);$("#shClose").onclick=()=>sheet.classList.remove("open")};
+const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
+ for(const r of photo?ROOMS.concat([PHOTO]):ROOMS){const b=document.createElement("button");b.className="card"+(r.id===S.room?" on":"");
+  let c=thumbs[r.id];if(!c){c=thumbs[r.id]=document.createElement("canvas");c.width=160;c.height=200;const x=c.getContext("2d");
+   if(r.id==="photo"){const k=Math.max(160/photo.width,200/photo.height);x.drawImage(photo,(160-photo.width*k)/2,(200-photo.height*k)/2,photo.width*k,photo.height*k)}else r.draw(x,160,200)}
+  const cc=document.createElement("canvas");cc.width=160;cc.height=200;cc.getContext("2d").drawImage(c,0,0);
+  const sp=document.createElement("span");sp.textContent=r.name;b.append(cc,sp);b.onclick=()=>{if(r.id!==S.room)selectRoom(r.id)};box.appendChild(b)}};
+const syncUI=()=>{for(const k in SRC){tg[k].classList.toggle("on",M.ch[k].on);mixEl[k].value=M.ch[k].on?M.ch[k].v:0}$("#int").value=S.int;renderRooms()};
+const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);buildScene();sizeDrops();syncUI();save()};
+ if(first)return go();$("#veil").classList.add("on");setTimeout(()=>{go();$("#veil").classList.remove("on")},380)};
 
 /* ---------- ESCENA DE FONDO ---------- */
 // Escena procedural: ciudad de noche con luces desenfocadas. Se dibuja nítida;
 // el shader la empaña y las gotas dejan ver la versión nítida refractada.
-const drawCity=(c,w,h)=>{const u=w/400;let g=c.createLinearGradient(0,0,0,h);
- g.addColorStop(0,"#071120");g.addColorStop(.55,"#13283e");g.addColorStop(1,"#0a141d");c.fillStyle=g;c.fillRect(0,0,w,h);
- g=c.createRadialGradient(w*.5,h*.62,0,w*.5,h*.62,w*.95);g.addColorStop(0,"rgba(255,170,90,.38)");g.addColorStop(1,"rgba(255,170,90,0)");c.fillStyle=g;c.fillRect(0,0,w,h);
- ["#0d1a29","#08131e","#050b12"].forEach((col,L)=>{const base=h*(.6+L*.05);let x=-10;
-  while(x<w){const bw=rand(w*.07,w*.17),bh=rand(h*.1,h*(.34-L*.06));c.fillStyle=col;c.fillRect(x,base-bh,bw,bh+h);
-   for(let wy=base-bh+10;wy<base-6;wy+=rand(13*u,19*u))for(let wx=x+6;wx<x+bw-8;wx+=rand(11*u,17*u))if(Math.random()<.3){c.fillStyle=Math.random()<.8?"rgba(255,200,110,"+rand(.3,.85)+")":"rgba(150,200,255,.6)";c.fillRect(wx,wy,4*u,6*u)}
-   x+=bw+rand(0,6)}});
- g=c.createLinearGradient(0,h*.78,0,h);g.addColorStop(0,"rgba(20,32,44,.9)");g.addColorStop(1,"rgba(6,10,16,1)");c.fillStyle=g;c.fillRect(0,h*.78,w,h);
- const cols=["255,190,100","255,120,80","160,210,255","255,240,200","255,90,120"];c.globalCompositeOperation="lighter";
- for(let i=0;i<140;i++){const x=rand(0,w),y=rand(h*.45,h*.92),r=rand(3,24)*u,k=cols[i%5];
-  g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(${k},${rand(.35,.95)})`);g.addColorStop(.6,`rgba(${k},.25)`);g.addColorStop(1,`rgba(${k},0)`);
-  c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,7);c.fill();
-  if(y>h*.72){const l=rand(h*.05,h*.18);g=c.createLinearGradient(0,y,0,y+l);g.addColorStop(0,`rgba(${k},.4)`);g.addColorStop(1,`rgba(${k},0)`);c.fillStyle=g;c.fillRect(x-r*.3,y,r*.6,l)}}
- c.globalCompositeOperation="source-over"};
+
 
 /* ---------- WEBGL ---------- */
 const cv=$("#gl"),gl=cv.getContext("webgl",{antialias:false,alpha:false})||cv.getContext("experimental-webgl");
@@ -107,7 +113,7 @@ const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.
 let W,H,photo=null;
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
 const buildScene=()=>{const L=1024,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
- if(photo){const k=Math.max(sw/photo.width,sh2/photo.height),pw=photo.width*k,ph=photo.height*k;c.drawImage(photo,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else drawCity(c,sw,sh2);
+ if(photo&&S.room==="photo"){const k=Math.max(sw/photo.width,sh2/photo.height),pw=photo.width*k,ph=photo.height*k;c.drawImage(photo,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
  upl(0,tS,sc);upl(1,tB,bc)};
 
@@ -160,19 +166,19 @@ const frame=t=>{const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
 /* ---------- FOTO PROPIA (se guarda en el dispositivo si el navegador lo permite) ---------- */
 const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("rainroom",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);
  q.onsuccess=()=>{const s=q.result.transaction("k",m==="get"?"readonly":"readwrite").objectStore("k"),x=m==="get"?s.get("photo"):m==="put"?s.put(v,"photo"):s.delete("photo");x.onsuccess=()=>r(x.result);x.onerror=()=>r(null)}}catch(e){r(null)}});
-const setPhoto=blob=>new Promise(res=>{const im=new Image();im.onload=()=>{photo=im;$("#fabX").style.display="flex";buildScene();res(true)};im.onerror=()=>res(false);im.src=URL.createObjectURL(blob)});
+const setPhoto=(blob,sel)=>new Promise(res=>{const im=new Image();im.onload=()=>{photo=im;delete thumbs.photo;$("#fabX").style.display="flex";sel?selectRoom("photo"):(buildScene(),renderRooms());res(true)};im.onerror=()=>res(false);im.src=URL.createObjectURL(blob)});
 $("#fabP").onclick=()=>$("#file").click();
-$("#file").onchange=async e=>{const f=e.target.files[0];if(f&&await setPhoto(f))idb("put",f)};
-$("#fabX").onclick=()=>{photo=null;$("#fabX").style.display="none";buildScene();idb("del")};
+$("#file").onchange=async e=>{const f=e.target.files[0];if(f&&await setPhoto(f,true))idb("put",f)};
+$("#fabX").onclick=()=>{photo=null;delete thumbs.photo;$("#fabX").style.display="none";if(S.room==="photo")selectRoom("city");else renderRooms();idb("del")};
 
 /* ---------- ARRANQUE ---------- */
 const resize=()=>{const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",resize);
-M.init();build();const rg=$("#int");rg.value=S.int;rg.oninput=()=>{S.int=+rg.value};rg.onchange=save;
-let idle;const wake=()=>{$("#ui").classList.remove("h");clearTimeout(idle);idle=setTimeout(()=>$("#ui").classList.add("h"),5000)};
+M.init();buildUI();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value};rg.onchange=save;
+let idle;const wake=()=>{$("#ui").classList.remove("h");clearTimeout(idle);idle=setTimeout(()=>{if(!sheet.classList.contains("open"))$("#ui").classList.add("h")},5000)};
 addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake();
-const unlock=()=>{removeEventListener("pointerdown",unlock);$("#msg").style.opacity=0;gyro();rainP.then(()=>{M.resume();refresh()})};
+const unlock=()=>{removeEventListener("pointerdown",unlock);$("#msg").style.opacity=0;gyro();rainP.then(()=>{M.resume();syncUI()})};
 addEventListener("pointerdown",unlock);
-addEventListener("pagehide",save);
-resize();idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
+addEventListener("pagehide",save);document.addEventListener("pointerdown",e=>{if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
+resize();selectRoom(S.room,true);idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
 })();
