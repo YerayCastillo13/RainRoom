@@ -1,0 +1,18 @@
+:root{--fg:#e9f0f8;--mu:rgba(233,240,248,.55);--gl:rgba(14,22,34,.4);--ln:rgba(255,255,255,.13);--ac:#9fd0ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#060a10;color:var(--fg);-webkit-tap-highlight-color:transparent;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#ui{position:fixed;inset:0;pointer-events:none;transition:opacity .8s}#ui.h{opacity:0}#ui>*{pointer-events:auto}#ui.h>*{pointer-events:none}
+.pill,.snd,.fab{background:var(--gl);border:1px solid var(--ln);color:var(--fg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 12px 34px rgba(0,0,0,.35)}
+#bar{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:14px;display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-size:12px;color:var(--mu)}
+#bar input{width:120px;accent-color:var(--ac)}
+.fab{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#fabX{right:66px;font-size:18px;display:none}
+svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#dock{position:absolute;left:50%;bottom:0;transform:translateX(-50%);display:flex;gap:18px;padding:12px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.w{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px}
+.snd{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;touch-action:none;opacity:.5;cursor:pointer;padding:0;transition:transform .25s,opacity .5s,box-shadow .5s}
+.snd.on{opacity:1;box-shadow:0 0 24px var(--ac),0 12px 34px rgba(0,0,0,.35)}.snd.d{transform:scale(1.08)}
+.w small{font-size:11px;color:var(--mu)}
+.lv{position:absolute;left:50%;bottom:74px;width:4px;height:96px;margin-left:-2px;border-radius:2px;background:var(--ln);overflow:hidden;opacity:0;transition:opacity .3s;pointer-events:none}
+.lv.s{opacity:1}.lv i{position:absolute;left:0;right:0;bottom:0;background:var(--ac);height:0}
+#msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 16px;border-radius:999px;font-size:13px;background:var(--gl);border:1px solid var(--ln);transition:opacity .6s;pointer-events:none}
