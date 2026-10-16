@@ -49,27 +49,48 @@ const M={ch:{},
  init(){for(const k in SRC)this.ch[k]={v:SRC[k].v,on:false,stop:null,g:null}},
  start(k){const c=this.ch[k];if(c.stop)return;const a=ensure();c.g=a.createGain();c.g.gain.value=c.v;c.g.connect(master);c.stop=bufs[k]?loopSample(a,bufs[k],c.g):SRC[k].build(a,c.g)},
  halt(k){const c=this.ch[k];if(!c.stop)return;c.stop();c.stop=null;try{c.g.disconnect()}catch(e){}},
- set(k,on){this.ch[k].on=on;if(unlocked)on?this.start(k):this.halt(k)},
+ set(k,on){this.ch[k].on=on;if(unlocked){on?this.start(k):this.halt(k);keepAlive()}},
  vol(k,v){const c=this.ch[k];c.v=v;if(c.g)c.g.gain.setTargetAtTime(v,ctx.currentTime,.06)},
  apply(m){for(const k in this.ch){const s=m[k]||{v:this.ch[k].v,on:false};this.vol(k,s.v);this.set(k,!!s.on&&s.v>0)}},
- resume(){unlocked=true;for(const k in this.ch)if(this.ch[k].on)this.start(k)},
+ resume(){unlocked=true;for(const k in this.ch)if(this.ch[k].on)this.start(k);keepAlive()},
  state(){const o={};for(const k in this.ch)o[k]={v:+this.ch[k].v.toFixed(2),on:this.ch[k].on};return o}};
 rainP=Promise.all(Object.keys(SRC).filter(k=>SRC[k].f).map(k=>fetch(SRC[k].f).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>new Promise(res=>ensure().decodeAudioData(b,x=>{bufs[k]=x;res()},()=>res()))).catch(()=>{})));
 
 /* ---------- INTERFAZ: dock + hoja de salas y mezcla (sliders grandes, sin arrastres) ---------- */
 const roomDef=()=>ROOMS.concat([PHOTO]).find(r=>r.id===S.room)||ROOMS[0];
-const dock=$("#dock"),sheet=$("#sheet"),tg={},mixEl={},thumbs={},imgs={};
+const dock=$("#dock"),sheet=$("#sheet"),tg={},mixEl={},rows={},thumbs={},imgs={};
 const fillR=i=>i.style.setProperty("--p",(i.value-i.min)/(i.max-i.min)*100+"%");
+const buzz=n=>{try{navigator.vibrate&&navigator.vibrate(n)}catch(e){}};
+// Control rápido de volumen: aparece al encender un sonido o al mantener pulsado su icono
+const pop=$("#pop"),ps=pop.querySelector("input"),pnm=pop.querySelector("b"),pv=pop.querySelector("output");let popK=null,popT;
+const hidePop=()=>{pop.classList.remove("show");popK=null};
+const showPop=(k,b)=>{popK=k;pnm.textContent=SRC[k].l;const c=M.ch[k];ps.value=c.on?c.v:0;fillR(ps);pv.textContent=Math.round(ps.value*100)+"%";
+ const r=b.getBoundingClientRect(),d=dock.getBoundingClientRect(),w=Math.min(300,innerWidth-24);pop.style.width=w+"px";pop.style.left=clamp(r.left+r.width/2-w/2,12,innerWidth-w-12)+"px";pop.style.bottom=(innerHeight-d.top+10)+"px";
+ pop.classList.add("show");clearTimeout(popT);popT=setTimeout(hidePop,2800)};
+ps.oninput=()=>{if(!popK)return;const v=+ps.value;M.vol(popK,v);M.set(popK,v>.02);pv.textContent=Math.round(v*100)+"%";syncUI(true);clearTimeout(popT);popT=setTimeout(hidePop,2800)};ps.onchange=save;
+const tapSound=(k,b)=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);buzz(8);syncUI();save();if(on)showPop(k,b);else hidePop()};
+const setTab=i=>{document.querySelectorAll(".pn").forEach((p,j)=>p.classList.toggle("on",i===j));document.querySelectorAll("#tabs button").forEach((b,j)=>b.setAttribute("aria-selected",i===j));$("#tind").style.transform=`translateX(${i*100}%)`;S.tab=i};
+const buildTabs=()=>{document.querySelectorAll("#tabs button").forEach((b,i)=>b.onclick=()=>setTab(i));$("#brand").onclick=()=>{setTab(0);sheet.classList.add("open")};setTab(S.tab||0)};
 const buildUI=()=>{
  for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;
-  b.onclick=()=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);syncUI();save()};dock.appendChild(b);tg[k]=b;
-  const r=document.createElement("label");r.className="row";r.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg><span>${SRC[k].l}</span><input type="range" min="0" max="1" step=".01" aria-label="Volumen de ${SRC[k].l}">`;
-  const inp=r.querySelector("input");inp.oninput=()=>{const v=+inp.value;M.vol(k,v);M.set(k,v>.02);tg[k].classList.toggle("on",v>.02)};inp.onchange=save;$("#mix").appendChild(r);mixEl[k]=inp}
+  let lp=0,long=false;
+  b.onpointerdown=()=>{long=false;clearTimeout(lp);lp=setTimeout(()=>{long=true;buzz(12);showPop(k,b)},420)};
+  b.onpointerup=()=>{clearTimeout(lp);if(!long)tapSound(k,b)};
+  b.onpointerleave=b.onpointercancel=()=>clearTimeout(lp);
+  b.oncontextmenu=e=>e.preventDefault();
+  b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tapSound(k,b)}};
+  dock.appendChild(b);tg[k]=b;
+  const r=document.createElement("div");r.className="row";
+  r.innerHTML=`<button class="ic" aria-label="Activar o silenciar ${SRC[k].l}"><svg viewBox="0 0 24 24">${SRC[k].i}</svg></button><div class="rc"><div class="rt"><span>${SRC[k].l}</span><output></output></div><input type="range" min="0" max="1" step=".01" aria-label="Volumen de ${SRC[k].l}"></div>`;
+  const inp=r.querySelector("input");rows[k]=r;
+  inp.oninput=()=>{const v=+inp.value;M.vol(k,v);M.set(k,v>.02);syncUI(true)};inp.onchange=save;
+  r.querySelector(".ic").onclick=()=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);buzz(8);syncUI();save()};
+  $("#mix").appendChild(r);mixEl[k]=inp}
  const m=document.createElement("button");m.className="snd";m.setAttribute("aria-label","Salas y mezcla");m.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
  m.onclick=()=>sheet.classList.add("open");dock.appendChild(m);$("#shClose").onclick=()=>sheet.classList.remove("open");
  document.addEventListener("input",e=>{if(e.target.type==="range")fillR(e.target)});
  const hd=$("#shHead");let sy=0,dy=0,t0=0,dg=false;
- hd.onpointerdown=e=>{if(e.target.closest(".x"))return;dg=true;sy=e.clientY;dy=0;t0=performance.now();hd.setPointerCapture(e.pointerId);sheet.style.transition="none"};
+ hd.onpointerdown=e=>{if(e.target.closest(".x,#tabs button"))return;dg=true;sy=e.clientY;dy=0;t0=performance.now();hd.setPointerCapture(e.pointerId);sheet.style.transition="none"};
  hd.onpointermove=e=>{if(!dg)return;dy=Math.max(0,e.clientY-sy);sheet.style.transform=`translate(-50%,${dy}px)`};
  hd.onpointerup=hd.onpointercancel=()=>{if(!dg)return;dg=false;sheet.style.transition="";sheet.style.transform="";if(dy>90||dy/(performance.now()-t0)>.6)sheet.classList.remove("open")};};
 const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
@@ -77,9 +98,12 @@ const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
   let c=thumbs[r.id];if(!c){c=thumbs[r.id]=document.createElement("canvas");c.width=160;c.height=200;const x=c.getContext("2d");
    const im=r.id==="photo"?photo:imgs[r.id];if(im){const k=Math.max(160/im.width,200/im.height);x.drawImage(im,(160-im.width*k)/2,(200-im.height*k)/2,im.width*k,im.height*k)}else r.draw(x,160,200)}
   const cc=document.createElement("canvas");cc.width=160;cc.height=200;cc.getContext("2d").drawImage(c,0,0);
-  const sp=document.createElement("span");sp.textContent=r.name;b.append(cc,sp);b.onclick=()=>{if(r.id!==S.room)selectRoom(r.id)};box.appendChild(b)}};
-const syncUI=()=>{for(const k in SRC){tg[k].classList.toggle("on",M.ch[k].on);mixEl[k].value=M.ch[k].on?M.ch[k].v:0}$("#int").value=S.int;renderRooms();syncW();document.querySelectorAll("input[type=range]").forEach(fillR)};
-const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
+  const sp=document.createElement("span");sp.textContent=r.name;b.append(cc,sp);b.onclick=()=>{if(r.id!==S.room){buzz(10);selectRoom(r.id)}};box.appendChild(b)}
+ const a=document.createElement("button");a.className="card add";a.setAttribute("aria-label","Usar tu propia foto");a.innerHTML="<i>+</i><span>Tu foto</span>";a.onclick=()=>$("#file").click();box.appendChild(a)};
+const syncUI=light=>{for(const k in SRC){const c=M.ch[k],v=c.on?c.v:0;tg[k].classList.toggle("on",c.on);tg[k].style.setProperty("--v",v);rows[k].classList.toggle("off",!c.on);rows[k].querySelector("output").textContent=Math.round(v*100)+"%";
+  if(light!==true||document.activeElement!==mixEl[k]){mixEl[k].value=v;fillR(mixEl[k])}}
+ if(light!==true){$("#int").value=S.int;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%";$("#rn").textContent=roomDef().name;renderRooms();syncW();fillR($("#int"))}};
+const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};msMeta();S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
  if(first)return go();$("#veil").classList.add("on");setTimeout(()=>{go();$("#veil").classList.remove("on")},380)};
 
 /* ---------- ESCENA DE FONDO ---------- */
@@ -168,18 +192,48 @@ const compose=()=>{dc.drawImage(wet,0,0);for(const b of B){const s=b.v>0?Math.mi
 /* ---------- WIDGETS: una instancia por tipo y sala, arrastrables, posición guardada en proporción ---------- */
 const wl=$("#wl"),wi={},wchip={};
 const chime=()=>{const c=ensure(),t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=660;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.25,t+.02);g.gain.exponentialRampToValueAtTime(1e-4,t+1.6);o.connect(g).connect(master);o.start(t);o.stop(t+1.7)};
-const fadeOut=s=>{const c=ensure();master.gain.setTargetAtTime(0,c.currentTime,s/4);$("#veil").classList.add("sl");setTimeout(()=>{for(const k in M.ch)M.set(k,false);master.gain.cancelScheduledValues(ctx.currentTime);master.gain.value=.9;syncUI();save()},s*1000)};
+/* ---------- MODO NOCHE ----------
+   iOS silencia el audio web con el interruptor de silencio y lo suspende al bloquear la pantalla, salvo que la página
+   se comporte como reproductor: sesión de audio "playback" + <audio> silencioso en bucle + controles de pantalla de bloqueo. */
+let sleepEnd=0,sleepTm,wlk=null,paused=[];
+const wavBlob=(n,sr)=>{const d=new DataView(new ArrayBuffer(44+n*2)),s=(o,t)=>[...t].forEach((c,i)=>d.setUint8(o+i,c.charCodeAt(0)));
+ s(0,"RIFF");d.setUint32(4,36+n*2,true);s(8,"WAVEfmt ");d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);d.setUint32(24,sr,true);d.setUint32(28,sr*2,true);d.setUint16(32,2,true);d.setUint16(34,16,true);s(36,"data");d.setUint32(40,n*2,true);
+ for(let i=0;i<n;i++)d.setInt16(44+i*2,i%2?1:-1,true);return new Blob([d],{type:"audio/wav"})};
+const ka=new Audio();ka.loop=true;ka.setAttribute("playsinline","");ka.src=URL.createObjectURL(wavBlob(8000,8000));
+try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
+const hasMS="mediaSession"in navigator;
+const anyOn=()=>Object.keys(M.ch).some(k=>M.ch[k].on);
+const keepAlive=()=>{if(anyOn()){const p=ka.play();if(p&&p.catch)p.catch(()=>{});if(hasMS)navigator.mediaSession.playbackState="playing"}else{ka.pause();if(hasMS)navigator.mediaSession.playbackState="paused"}};
+const msMeta=()=>{if(hasMS&&typeof MediaMetadata!=="undefined")navigator.mediaSession.metadata=new MediaMetadata({title:"RainRoom",artist:roomDef().name,album:"Tu sala"})};
+if(hasMS){try{navigator.mediaSession.setActionHandler("pause",()=>{paused=Object.keys(M.ch).filter(k=>M.ch[k].on);paused.forEach(k=>M.set(k,false));syncUI()});
+ navigator.mediaSession.setActionHandler("play",()=>{ka.play().catch(()=>{});(paused.length?paused:["rain"]).forEach(k=>{if(M.ch[k].v<.05)M.vol(k,SRC[k].v);M.set(k,true)});paused=[];syncUI()})}catch(e){}}
+const revive=()=>{if(ctx&&unlocked&&anyOn()&&ctx.state!=="running")ctx.resume().catch(()=>{});if(sleepEnd&&Date.now()>=sleepEnd)sleepDone()};
+document.addEventListener("visibilitychange",revive);addEventListener("pageshow",revive);setInterval(revive,3000);
+// Temporizador de sueño: el fundido se programa en el reloj de audio, así se apaga aunque iOS frene los temporizadores de la página
+const sleepDone=()=>{sleepEnd=0;fadeOut(25)};
+const sleepArm=m=>{const c=ensure();sleepEnd=Date.now()+m*60000;clearTimeout(sleepTm);sleepTm=setTimeout(sleepDone,m*60000);master.gain.cancelScheduledValues(c.currentTime);master.gain.setValueAtTime(.9,c.currentTime+m*60);master.gain.linearRampToValueAtTime(0,c.currentTime+m*60+25)};
+const sleepCancel=()=>{sleepEnd=0;clearTimeout(sleepTm);if(ctx){master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(.9,ctx.currentTime,.1)}};
+const fadeOut=s=>{const c=ensure();master.gain.cancelScheduledValues(c.currentTime);master.gain.setTargetAtTime(0,c.currentTime,s/4);$("#veil").classList.add("sl");setTimeout(()=>{for(const k in M.ch)M.set(k,false);master.gain.cancelScheduledValues(ctx.currentTime);master.gain.value=.9;syncUI();save()},s*1000)};
+// Pantalla encendida (Wake Lock) y modo noche (atenuado + 30 fps para gastar menos batería)
+const setWake=async on=>{try{if(on&&navigator.wakeLock&&!wlk){wlk=await navigator.wakeLock.request("screen");wlk.onrelease=()=>{wlk=null}}else if(!on&&wlk){await wlk.release();wlk=null}}catch(e){}};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.wake&&!wlk)setWake(true)});
+const nchip={};
+const applyNight=()=>{$("#veil").classList.toggle("night",!!S.night);nchip.n.classList.toggle("on",!!S.night);nchip.w.classList.toggle("on",!!S.wake)};
+const buildN=()=>{[["n","Modo noche"],["w","Pantalla encendida"]].forEach(([k,t])=>{const b=document.createElement("button");b.className="chip";b.textContent=t;
+ b.onclick=()=>{if(k==="n")S.night=!S.night;else{S.wake=!S.wake;setWake(S.wake)}applyNight();save()};$("#nsel").appendChild(b);nchip[k]=b});applyNight()};
 const placeW=o=>{o.el.style.left=o.x*Math.max(0,W-o.el.offsetWidth)+"px";o.el.style.top=o.y*Math.max(0,H-o.el.offsetHeight-96)+"px"};
 const addW=(t,st)=>{if(wi[t]||!WIDGETS[t])return;const d=WIDGETS[t],o=wi[t]={x:st&&st.x!=null?st.x:.08,y:st&&st.y!=null?st.y:.14,cfg:Object.assign(d.cfg(),st&&st.cfg)};
- const e=o.el=document.createElement("section");e.className="wd";e.setAttribute("aria-label",d.name);wl.appendChild(e);o.un=d.mount(e,o.cfg,{save,chime,fadeOut})||(()=>{});placeW(o);
+ const e=o.el=document.createElement("section");e.className="wd";e.setAttribute("aria-label",d.name);wl.appendChild(e);o.un=d.mount(e,o.cfg,{save,chime,fadeOut,sleepArm,sleepCancel,sleepEnd:()=>sleepEnd})||(()=>{});placeW(o);
+ const x=document.createElement("button");x.className="wx";x.textContent="×";x.setAttribute("aria-label","Quitar "+d.name);x.onclick=()=>{buzz(8);closeW(t)};e.appendChild(x);
  e.onpointerdown=ev=>{if(ev.target.closest("button,textarea,input"))return;const r=e.getBoundingClientRect(),dx=ev.clientX-r.left,dy=ev.clientY-r.top;e.setPointerCapture(ev.pointerId);e.classList.add("d");
-  e.onpointermove=m=>{o.x=clamp((m.clientX-dx)/Math.max(1,W-e.offsetWidth),0,1);o.y=clamp((m.clientY-dy)/Math.max(1,H-e.offsetHeight-96),0,1);placeW(o)};
+  e.onpointermove=m=>{o.x=clamp((m.clientX-dx-wl.getBoundingClientRect().left)/Math.max(1,W-e.offsetWidth),0,1);o.y=clamp((m.clientY-dy-wl.getBoundingClientRect().top)/Math.max(1,H-e.offsetHeight-96),0,1);placeW(o)};
   e.onpointerup=e.onpointercancel=()=>{e.onpointermove=null;e.classList.remove("d");save()}}};
 const delW=t=>{const o=wi[t];if(!o)return;o.un();o.el.remove();delete wi[t]};
+const closeW=t=>{const o=wi[t];if(!o)return;delete wi[t];o.un();o.el.classList.add("out");setTimeout(()=>o.el.remove(),240);syncW();save()};
 const loadW=w=>{Object.keys(wi).forEach(delW);for(const t in w)addW(t,w[t])};
 const stateW=()=>{const o={};for(const t in wi)o[t]={x:+wi[t].x.toFixed(3),y:+wi[t].y.toFixed(3),cfg:wi[t].cfg};return o};
 const syncW=()=>{for(const t in wchip)wchip[t].classList.toggle("on",!!wi[t])};
-const buildW=()=>{for(const t in WIDGETS){const b=document.createElement("button");b.className="chip";b.textContent=WIDGETS[t].name;b.onclick=()=>{wi[t]?delW(t):addW(t);syncW();save()};$("#wsel").appendChild(b);wchip[t]=b}};
+const buildW=()=>{for(const t in WIDGETS){const b=document.createElement("button");b.className="chip";b.textContent=WIDGETS[t].name;b.onclick=()=>{buzz(8);if(wi[t])closeW(t);else{addW(t);syncW();save()}};$("#wsel").appendChild(b);wchip[t]=b}};
 
 /* ---------- PARALAJE ---------- */
 const par={tx:0,ty:0,x:0,y:0};
@@ -189,8 +243,9 @@ const gyro=async()=>{try{if(typeof DeviceOrientationEvent!=="undefined"&&DeviceO
 
 /* ---------- BUCLE ---------- */
 let last=0,nextFl=4,strike=-99,fogV=.8,curFx={};const lf=s=>s<0?0:Math.max(Math.exp(-s*10),s>.17?.8*Math.exp(-(s-.17)*6):0);
-const frame=t=>{const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
- par.x=lerp(par.x,par.tx+Math.sin(t/7000)*.3,.06);par.y=lerp(par.y,par.ty+Math.cos(t/9000)*.2,.06);
+let fc=0;
+const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
+ par.x=lerp(par.x,par.tx+Math.sin(t/7000)*.3,.06);par.y=lerp(par.y,par.ty+Math.cos(t/9000)*.2,.06);wl.style.transform=`translate3d(${(-par.x*7).toFixed(1)}px,${(-par.y*5).toFixed(1)}px,0)`;
  nextFl-=dt;if(nextFl<=0){const on=M.ch.thunder.on&&boomFn;nextFl=on?rand(7,18):2;if(on){strike=t/1e3;boomFn(rand(.8,3))}}
  sim(dt);compose();upl(2,tD,dcv);
  gl.uniform2f(uP,par.x,par.y);fogV=lerp(fogV,S.int<.05?0:.7+.2*S.int,.04);gl.uniform1f(uF,fogV);gl.uniform1f(uL,lf(t/1e3-strike));gl.uniform1f(uT,(t%1e4)/1e3);gl.uniform1f(uK,t/1e3);gl.uniform1f(uM,curFx.mist||0);const gg=curFx.glow||{x:0,y:0,r:1,s:0,c:[0,0,0]};gl.uniform4f(uG,gg.x,gg.y,gg.r,gg.s);gl.uniform3f(uGc,gg.c[0],gg.c[1],gg.c[2]);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(frame)};
@@ -206,11 +261,11 @@ $("#fabX").onclick=()=>{photo=null;delete thumbs.photo;$("#fabX").style.display=
 /* ---------- ARRANQUE ---------- */
 const resize=()=>{const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
-M.init();buildUI();buildW();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value};rg.onchange=save;
+M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%"};rg.onchange=save;
 let idle;const wake=()=>{$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(!sheet.classList.contains("open"))$("#ui").classList.add("h")},5000)};
 addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake();
-const unlock=()=>{removeEventListener("pointerdown",unlock);$("#msg").style.opacity=0;gyro();rainP.then(()=>{M.resume();syncUI()})};
+const unlock=()=>{removeEventListener("pointerdown",unlock);ensure();ka.play().catch(()=>{});if(S.tip)$("#msg").style.opacity=0;else{$("#msg").textContent="Toca un sonido para activarlo · mantén pulsado para ajustar su volumen";S.tip=1;save();setTimeout(()=>{$("#msg").style.opacity=0},4500)}gyro();if(S.wake)setWake(true);rainP.then(()=>{M.resume();syncUI();msMeta()})};
 addEventListener("pointerdown",unlock);
-addEventListener("pagehide",save);document.addEventListener("pointerdown",e=>{if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
+addEventListener("pagehide",save);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});document.addEventListener("pointerdown",e=>{if(popK&&!pop.contains(e.target)&&!e.target.closest("#dock"))hidePop();if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
 resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image();im.onload=()=>{imgs[r.id]=im;delete thumbs[r.id];if(S.room===r.id)buildScene();renderRooms()};im.src=r.src}});idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
 })();

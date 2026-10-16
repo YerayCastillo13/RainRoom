@@ -20,3 +20,7 @@ Importa la carpeta como proyecto estático (sin build). `vercel.json` ya está i
 
 ## Antes de publicar con publicidad
 Comprueba que tienes derechos comerciales sobre la grabación de lluvia y sobre cualquier foto que añadas (propias o con licencia que lo permita).
+
+## Modo noche (iPhone)
+Para que suene con el interruptor de silencio y con la pantalla bloqueada: abre la web desde HTTPS (Vercel), toca la pantalla una vez y, mejor aún, usa Compartir > "Añadir a pantalla de inicio".
+Prueba: 1) interruptor en silencio, 2) bloquear la pantalla, 3) usar los controles de la pantalla de bloqueo.
