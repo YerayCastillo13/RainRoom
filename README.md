@@ -24,3 +24,14 @@ Comprueba que tienes derechos comerciales sobre la grabación de lluvia y sobre 
 ## Modo noche (iPhone)
 Para que suene con el interruptor de silencio y con la pantalla bloqueada: abre la web desde HTTPS (Vercel), toca la pantalla una vez y, mejor aún, usa Compartir > "Añadir a pantalla de inicio".
 Prueba: 1) interruptor en silencio, 2) bloquear la pantalla, 3) usar los controles de la pantalla de bloqueo.
+
+## Fondos (la mayor palanca de realismo)
+- Foto: `assets/scenes/city.jpg`, `forest.jpg`, `lounge.jpg` (1600 px o más en el lado largo).
+- Vídeo en bucle: `assets/scenes/city.mp4`, `forest.mp4`, `lounge.mp4` (720p, sin audio, 10-20 s, idealmente < 8 MB). Si existe, sustituye a la foto y el cristal se aplica por encima. La foto sirve de miniatura y de respaldo.
+- Audio: `assets/audio/wind.mp3`, `fire.mp3`, `traffic.mp3` (bucles de 15-60 s).
+- Licencias: usa solo material propio o con licencia que permita uso comercial.
+
+## Lista antes de lanzar
+- Aviso legal, política de privacidad y cookies; si hay publicidad en la UE, consentimiento previo.
+- Nombre y dominio: comprueba disponibilidad y marcas parecidas ("Rain Room" es el nombre de una instalación artística conocida).
+- Probar en iPhone (Safari y app instalada), Android (Chrome) y escritorio (Chrome, Safari, Firefox).

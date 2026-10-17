@@ -1,5 +1,5 @@
 /* RainRoom · salas. Para añadir una: crea su función de dibujo y regístrala en ROOMS.
-   src = foto opcional en assets/scenes (si existe, sustituye al dibujo); w = widgets iniciales; fx = efectos vivos (mist: niebla que se desplaza; glow: luz cálida que parpadea); mix = sonidos que se activan al entrar (v = volumen); int = intensidad de las gotas. */
+   video = bucle opcional (mp4, 720p, sin audio); src = foto opcional en assets/scenes (si existe, sustituye al dibujo); w = widgets iniciales; fx = efectos vivos (mist: niebla que se desplaza; glow: luz cálida que parpadea); mix = sonidos que se activan al entrar (v = volumen); int = intensidad de las gotas. */
 const rand=(a,b)=>a+Math.random()*(b-a);
 const drawCity=(c,w,h)=>{const u=w/400;let g=c.createLinearGradient(0,0,0,h);
  g.addColorStop(0,"#071120");g.addColorStop(.55,"#13283e");g.addColorStop(1,"#0a141d");c.fillStyle=g;c.fillRect(0,0,w,h);
@@ -28,7 +28,7 @@ const drawLounge=(c,w,h)=>{let g=c.createLinearGradient(0,0,0,h);g.addColorStop(
  g=c.createRadialGradient(w*.15,h*.88,0,w*.15,h*.88,w*.7);g.addColorStop(0,"rgba(255,170,80,.55)");g.addColorStop(1,"rgba(255,170,80,0)");c.fillStyle=g;c.fillRect(0,0,w,h);
  c.fillStyle="#120b08";c.fillRect(0,h*.9,w,h*.1);c.fillStyle="#d8c3a5";c.fillRect(w*.62,h*.84,w*.09,h*.06)};
 const ROOMS=[
- {id:"city",name:"Ciudad de noche",src:"assets/scenes/city.jpg",w:{clock:{x:.07,y:.12}},draw:drawCity,fx:{mist:.25},int:.7,mix:{rain:{v:.7,on:true},thunder:{v:.3,on:true},traffic:{v:.35,on:true}}},
- {id:"forest",name:"Bosque",src:"assets/scenes/forest.jpg",w:{},draw:drawForest,fx:{mist:.55},int:.55,mix:{rain:{v:.6,on:true},wind:{v:.3,on:true},thunder:{v:.15,on:true}}},
- {id:"lounge",name:"Salón acogedor",src:"assets/scenes/lounge.jpg",w:{clock:{x:.07,y:.12}},draw:drawLounge,fx:{mist:.1,glow:{x:.15,y:.88,r:.35,s:.5,c:[1,.62,.3]}},int:.5,mix:{rain:{v:.5,on:true},fire:{v:.5,on:true}}}];
+ {id:"city",name:"Ciudad de noche",src:"assets/scenes/city.jpg",video:"assets/scenes/city.mp4",w:{clock:{x:.07,y:.12}},draw:drawCity,fx:{mist:.25},int:.7,mix:{rain:{v:.7,on:true},thunder:{v:.3,on:true},traffic:{v:.35,on:true}}},
+ {id:"forest",name:"Bosque",src:"assets/scenes/forest.jpg",video:"assets/scenes/forest.mp4",w:{},draw:drawForest,fx:{mist:.55},int:.55,mix:{rain:{v:.6,on:true},wind:{v:.3,on:true},thunder:{v:.15,on:true}}},
+ {id:"lounge",name:"Salón acogedor",src:"assets/scenes/lounge.jpg",video:"assets/scenes/lounge.mp4",w:{clock:{x:.07,y:.12}},draw:drawLounge,fx:{mist:.1,glow:{x:.15,y:.88,r:.35,s:.5,c:[1,.62,.3]}},int:.5,mix:{rain:{v:.5,on:true},fire:{v:.5,on:true}}}];
 const PHOTO={id:"photo",name:"Mi foto",fx:{mist:.15},w:{clock:{x:.07,y:.12}},draw:(c,w,h)=>drawCity(c,w,h),int:.7,mix:{rain:{v:.7,on:true},thunder:{v:.25,on:true}}};

@@ -11,5 +11,12 @@ const WIDGETS={
   const draw=()=>{const end=api.sleepEnd();if(!R.firstChild||(!!end)!==on){on=!!end;R.innerHTML="";if(on)mk("Cancelar",()=>{api.sleepCancel();draw()});else[15,30,60,90].forEach(m=>mk(m,()=>{api.sleepArm(m);draw()},m+" minutos"))}
    T.textContent=end?fmt(Math.max(0,Math.ceil((end-Date.now())/1000))):"—"};
   draw();const iv=setInterval(draw,1000);return()=>clearInterval(iv)}},
+ session:{name:"Sesión",cfg:()=>({day:"",sec:0}),mount(e,cfg,api){e.innerHTML='<div class="ph">Sesión</div><div class="pt">00:00</div><div class="ph td"></div><div class="rw"><button data-a="s">Iniciar</button><button data-a="r" aria-label="Reiniciar">↺</button></div>';
+  const T=e.querySelector(".pt"),D=e.querySelector(".td"),B=e.querySelector('[data-a="s"]');let run=false,last=0,cur=0;
+  const today=()=>new Date().toDateString(),fmt=s=>{s=Math.floor(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return(h?h+":":"")+String(m).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
+  const tick=()=>{const n=Date.now();if(run){const d=(n-last)/1000;cur+=d;if(cfg.day!==today()){cfg.day=today();cfg.sec=0}cfg.sec+=d}last=n;T.textContent=fmt(cur);D.textContent="Hoy: "+fmt(cfg.day===today()?cfg.sec:0)};
+  B.onclick=()=>{run=!run;last=Date.now();B.textContent=run?"Pausar":"Iniciar";if(!run)api.save()};
+  e.querySelector('[data-a="r"]').onclick=()=>{run=false;cur=0;B.textContent="Iniciar";tick();api.save()};
+  tick();const iv=setInterval(tick,1000);return()=>{clearInterval(iv);api.save()}}},
  intent:{name:"Intención",cfg:()=>({text:""}),mount(e,cfg,api){e.innerHTML='<div class="ph">Hoy</div><input maxlength="60" placeholder="¿Qué toca hoy?" aria-label="Intención del día">';
   const t=e.querySelector("input");t.value=cfg.text;let h;t.oninput=()=>{cfg.text=t.value;clearTimeout(h);h=setTimeout(api.save,400)};return()=>clearTimeout(h)}}};

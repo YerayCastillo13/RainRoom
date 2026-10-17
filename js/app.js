@@ -5,8 +5,8 @@ try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)))}catch(e){}
 const save=()=>{S.mix=S.mix||{};S.mix[S.room]={snd:M.state(),int:S.int,w:stateW()};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 /* ---------- AUDIO ---------- */
-let ctx,master,rainBuf=null,boomFn=null;
-const ensure=()=>{if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.9;master.connect(ctx.destination)}if(ctx.state==="suspended")ctx.resume();return ctx};
+let ctx,master,rainBuf=null,boomFn=null,uv=null;
+const ensure=()=>{if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.9;uv=ctx.createGain();uv.gain.value=S.vol==null?1:S.vol;const cp=ctx.createDynamicsCompressor();cp.threshold.value=-14;cp.ratio.value=4;cp.attack.value=.01;cp.release.value=.3;master.connect(uv);uv.connect(cp);cp.connect(ctx.destination)}if(ctx.state==="suspended")ctx.resume();return ctx};
 const bufs={};let rainP;
 const noise=c=>{const n=c.sampleRate*5,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<n;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.5}const s=c.createBufferSource();s.buffer=b;s.loop=true;return s};
 const wander=(c,p,base,dep,rate)=>{let a=true,t;const f=()=>{if(!a)return;p.setTargetAtTime(base+rand(-dep,dep),c.currentTime,rate);t=setTimeout(f,rand(400,1800))};f();return()=>{a=false;clearTimeout(t)}};
@@ -70,7 +70,11 @@ const showPop=(k,b)=>{popK=k;pnm.textContent=SRC[k].l;const c=M.ch[k];ps.value=c
 ps.oninput=()=>{if(!popK)return;const v=+ps.value;M.vol(popK,v);M.set(popK,v>.02);pv.textContent=Math.round(v*100)+"%";syncUI(true);clearTimeout(popT);popT=setTimeout(hidePop,2800)};ps.onchange=save;
 const tapSound=(k,b)=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);buzz(8);syncUI();save();if(on)showPop(k,b);else hidePop()};
 const setTab=i=>{document.querySelectorAll(".pn").forEach((p,j)=>p.classList.toggle("on",i===j));document.querySelectorAll("#tabs button").forEach((b,j)=>b.setAttribute("aria-selected",i===j));$("#tind").style.transform=`translateX(${i*100}%)`;S.tab=i};
-const buildTabs=()=>{document.querySelectorAll("#tabs button").forEach((b,i)=>b.onclick=()=>setTab(i));$("#brand").onclick=()=>{setTab(0);sheet.classList.add("open")};setTab(S.tab||0)};
+const buildTabs=()=>{document.querySelectorAll("#tabs button").forEach((b,i)=>b.onclick=()=>setTab(i));$("#brand").onclick=()=>{setTab(0);sheet.classList.add("open")};setTab(S.tab||0);
+ const mv=$("#mv"),sv=()=>{$("#mvv").textContent=Math.round(mv.value*100)+"%";fillR(mv)};mv.value=S.vol==null?1:S.vol;sv();
+ mv.oninput=()=>{S.vol=+mv.value;if(uv)uv.gain.setTargetAtTime(S.vol,ctx.currentTime,.05);sv()};mv.onchange=save;
+ const PRESETS=[{n:"Suave",m:{rain:.4,wind:.12},i:.45},{n:"Tormenta",m:{rain:.85,thunder:.6,wind:.35},i:.95},{n:"Concentración",m:{rain:.45,traffic:.18},i:.5},{n:"Dormir",m:{rain:.35,fire:.2},i:.35}];
+ PRESETS.forEach(p=>{const b=document.createElement("button");b.className="chip";b.textContent=p.n;b.onclick=()=>{buzz(8);for(const k in SRC){const v=p.m[k];M.vol(k,v||M.ch[k].v);M.set(k,!!v)}S.int=p.i;syncUI();save()};$("#pres").appendChild(b)})};
 const buildUI=()=>{
  for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;
   let lp=0,long=false;
@@ -103,7 +107,7 @@ const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
 const syncUI=light=>{for(const k in SRC){const c=M.ch[k],v=c.on?c.v:0;tg[k].classList.toggle("on",c.on);tg[k].style.setProperty("--v",v);rows[k].classList.toggle("off",!c.on);rows[k].querySelector("output").textContent=Math.round(v*100)+"%";
   if(light!==true||document.activeElement!==mixEl[k]){mixEl[k].value=v;fillR(mixEl[k])}}
  if(light!==true){$("#int").value=S.int;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%";$("#rn").textContent=roomDef().name;renderRooms();syncW();fillR($("#int"))}};
-const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};msMeta();S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
+const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};msMeta();S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);vid=vids[id]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
  if(first)return go();$("#veil").classList.add("on");setTimeout(()=>{go();$("#veil").classList.remove("on")},380)};
 
 /* ---------- ESCENA DE FONDO ---------- */
@@ -150,13 +154,15 @@ const tS=mk(0),tB=mk(1),tD=mk(2);
 ["uS","uB","uD"].forEach((n,i)=>gl.uniform1i(gl.getUniformLocation(pr,n),i));
 const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.getUniformLocation(pr,"uL"),uT=gl.getUniformLocation(pr,"uT"),uR=gl.getUniformLocation(pr,"uR"),uK=gl.getUniformLocation(pr,"uK"),uM=gl.getUniformLocation(pr,"uM"),uG=gl.getUniformLocation(pr,"uG"),uGc=gl.getUniformLocation(pr,"uGc");
 
-let W,H,photo=null;
+let W,H,photo=null,vid=null,vf=false;const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
-const buildScene=()=>{const L=1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
+const buildScene=()=>{const L=vid?960:1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
  const im=S.room==="photo"?photo:imgs[S.room];if(im){const k=Math.max(sw/im.width,sh2/im.height),pw=im.width*k,ph=im.height*k;c.drawImage(im,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
- upl(0,tS,sc);upl(1,tB,bc)};
+ if(vid)vidFrame();else{upl(0,tS,sc);upl(1,tB,bc)}};
 
+const vidFrame=()=>{if(!vid||vid.readyState<2)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/vid.videoWidth,sh/vid.videoHeight),pw=vid.videoWidth*k,ph=vid.videoHeight*k;
+ c.drawImage(vid,(sw-pw)/2,(sh-ph)/2,pw,ph);bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
 /* ---------- GOTAS (simulación en CPU → mapa de normales) ---------- */
 const spr=document.createElement("canvas");spr.width=spr.height=64;
 {const x=spr.getContext("2d"),id=x.createImageData(64,64);
@@ -166,11 +172,11 @@ const spr=document.createElement("canvas");spr.width=spr.height=64;
 const wet=document.createElement("canvas"),dcv=document.createElement("canvas"),wc=wet.getContext("2d"),dc=dcv.getContext("2d");
 let B=[],ds=1,fadeT=0,frameN=0;
 const spawn=(x,y,r)=>B.push({x,y,r,v:0,a:rand(.85,1.2),lim:rand(3.4,5.6),dead:false});
-const sizeDrops=()=>{ds=clamp(960/Math.max(W,H),.5,1);wet.width=dcv.width=Math.round(W*ds);wet.height=dcv.height=Math.round(H*ds);
+const sizeDrops=()=>{ds=clamp(960/Math.max(W,H),.5,1)*[1,.85,.7][qual];wet.width=dcv.width=Math.round(W*ds);wet.height=dcv.height=Math.round(H*ds);
  wc.fillStyle="rgb(128,128,0)";wc.fillRect(0,0,wet.width,wet.height);B=[];
  for(let i=0;i<110;i++)spawn(rand(0,wet.width),rand(0,wet.height),.9+Math.pow(Math.random(),2.4)*5)};
 let acc=0;
-const sim=dt=>{const I=S.int,cap=I<.05?0:lerp(90,340,I),w=wet.width,h=wet.height;
+const sim=dt=>{const I=S.int,cap=I<.05?0:lerp(90,340,I)*[1,.6,.35][qual],w=wet.width,h=wet.height;
  acc+=I<.05?0:dt*lerp(3,60,I);while(acc>1){acc--;spawn(rand(0,w),rand(0,h),.9+Math.pow(Math.random(),2.4)*5)}
  for(const b of B){if(b.v===0){if(b.r>b.lim||Math.random()<dt*.012*I*b.r)b.v=.4}
   else{const y0=b.y;b.v=clamp(b.v+((.6+b.r*.45)-b.v)*dt*3+(Math.random()-.5)*.3,.1,4.5);if(Math.random()<dt*.7)b.v*=.25;
@@ -243,8 +249,9 @@ const gyro=async()=>{try{if(typeof DeviceOrientationEvent!=="undefined"&&DeviceO
 
 /* ---------- BUCLE ---------- */
 let last=0,nextFl=4,strike=-99,fogV=.8,curFx={};const lf=s=>s<0?0:Math.max(Math.exp(-s*10),s>.17?.8*Math.exp(-(s-.17)*6):0);
-let fc=0;
-const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
+let fc=0,qual=0,fa=.016,qT=0;
+const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}if(vid&&(vf=!vf))vidFrame();const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
+ fa=fa*.97+dt*.03;if(t-qT>4000&&fa>(S.night?.06:.032)&&qual<2){qual++;qT=t;fa=.016;resize();requestAnimationFrame(frame);return}
  par.x=lerp(par.x,par.tx+Math.sin(t/7000)*.3,.06);par.y=lerp(par.y,par.ty+Math.cos(t/9000)*.2,.06);wl.style.transform=`translate3d(${(-par.x*7).toFixed(1)}px,${(-par.y*5).toFixed(1)}px,0)`;
  nextFl-=dt;if(nextFl<=0){const on=M.ch.thunder.on&&boomFn;nextFl=on?rand(7,18):2;if(on){strike=t/1e3;boomFn(rand(.8,3))}}
  sim(dt);compose();upl(2,tD,dcv);
@@ -259,7 +266,7 @@ $("#file").onchange=async e=>{const f=e.target.files[0];if(f&&await setPhoto(f,t
 $("#fabX").onclick=()=>{photo=null;delete thumbs.photo;$("#fabX").style.display="none";if(S.room==="photo")selectRoom("city");else renderRooms();idb("del")};
 
 /* ---------- ARRANQUE ---------- */
-const resize=()=>{const d=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
+const resize=()=>{const d=Math.min(devicePixelRatio||1,[2,1.5,1][qual]);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
 M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%"};rg.onchange=save;
 let idle;const wake=()=>{$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(!sheet.classList.contains("open"))$("#ui").classList.add("h")},5000)};
@@ -267,5 +274,8 @@ addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake()
 const unlock=()=>{removeEventListener("pointerdown",unlock);ensure();ka.play().catch(()=>{});if(S.tip)$("#msg").style.opacity=0;else{$("#msg").textContent="Toca un sonido para activarlo · mantén pulsado para ajustar su volumen";S.tip=1;save();setTimeout(()=>{$("#msg").style.opacity=0},4500)}gyro();if(S.wake)setWake(true);rainP.then(()=>{M.resume();syncUI();msMeta()})};
 addEventListener("pointerdown",unlock);
 addEventListener("pagehide",save);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});document.addEventListener("pointerdown",e=>{if(popK&&!pop.contains(e.target)&&!e.target.closest("#dock"))hidePop();if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
-resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image();im.onload=()=>{imgs[r.id]=im;delete thumbs[r.id];if(S.room===r.id)buildScene();renderRooms()};im.src=r.src}});idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
+{let sx=0,sy=0,st=0;cv.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;st=performance.now()});
+ cv.addEventListener("pointerup",e=>{const dx=e.clientX-sx;if(Math.abs(dx)>80&&Math.abs(e.clientY-sy)<70&&performance.now()-st<700){const L=photo?ROOMS.concat([PHOTO]):ROOMS,i=L.findIndex(r=>r.id===S.room);buzz(10);selectRoom(L[(i+(dx<0?1:-1)+L.length)%L.length].id)}})}
+resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image();im.onload=()=>{imgs[r.id]=im;delete thumbs[r.id];if(S.room===r.id)buildScene();renderRooms()};im.src=r.src}
+ if(r.video){const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");v.preload="auto";v.onloadeddata=()=>{vids[r.id]=v;if(S.room===r.id)useVid()};v.src=r.video}});idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
 })();

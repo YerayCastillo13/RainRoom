@@ -94,3 +94,4 @@ button.ic{cursor:pointer}button.ic:active{transform:scale(.88)}
 .wd .wx{position:absolute;top:2px;right:2px;width:36px;height:36px;min-width:0;padding:0;border-radius:50%;background:transparent;color:var(--mu);font-size:20px;line-height:1;opacity:.45;transition:opacity .2s,background .2s}
 .wd .wx:hover,.wd .wx:focus-visible{opacity:1;background:rgba(255,255,255,.12)}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+#gl{touch-action:pan-y}#pres{margin-bottom:8px}
