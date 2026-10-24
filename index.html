@@ -2,28 +2,46 @@
 <html lang="es"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#060a10">
-<title>RainRoom · tu sala de lluvia</title>
-<meta name="description" content="Crea tu propia sala: lluvia sobre el cristal, sonidos ambientales y fondos a tu medida para concentrarte o desconectar.">
-<meta property="og:title" content="RainRoom"><meta property="og:description" content="Tu propio espacio digital: lluvia, tormenta y calma.">
+<title>RainRoom · Sonidos ambientales para dormir, estudiar y relajarte</title>
+<meta name="description" content="Crea tu propio espacio: elige un ambiente, mezcla sonidos como lluvia, viento o fuego y añade widgets para dormir, estudiar o desconectar. Gratis y sin registro.">
+<link rel="canonical" href="https://rainrooms.vercel.app/">
+<meta property="og:site_name" content="RainRoom">
+<meta property="og:title" content="RainRoom · Sonidos ambientales para dormir, estudiar y relajarte">
+<meta property="og:description" content="Tu propio espacio digital: ambientes y sonidos a tu medida. Gratis y sin registro.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://rainrooms.vercel.app/">
+<meta property="og:locale" content="es_ES">
+<meta property="og:image" content="https://rainrooms.vercel.app/assets/og-image.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="RainRoom: sonidos ambientales para dormir, estudiar y relajarte">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RainRoom · Sonidos ambientales para dormir, estudiar y relajarte">
+<meta name="twitter:description" content="Tu propio espacio digital: ambientes y sonidos a tu medida.">
+<meta name="twitter:image" content="https://rainrooms.vercel.app/assets/og-image.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23060a10'/%3E%3Cpath d='M16 6c4 6 7 9 7 13a7 7 0 0 1-14 0c0-4 3-7 7-13z' fill='%239fd0ff'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="RainRoom">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"RainRoom","url":"https://rainrooms.vercel.app/","description":"Espacio personal con ambientes y sonidos mezclables para dormir, estudiar o relajarse.","applicationCategory":"LifestyleApplication","operatingSystem":"Web","inLanguage":"es","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
 <link rel="stylesheet" href="css/style.css">
+<style>.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}</style>
 </head><body>
 <noscript>RainRoom necesita JavaScript para funcionar.</noscript>
+<main class="sr-only">
+ <h1>RainRoom: sonidos ambientales para dormir, estudiar y relajarte</h1>
+ <p>Elige un ambiente, mezcla los sonidos que quieras (lluvia, viento, fuego y más), usa el temporizador para dormir y añade widgets para concentrarte. Gratis y sin registro.</p>
+</main>
 <canvas id="gl"></canvas><div id="wl"></div><div id="veil"></div>
 <div id="ui">
  <button id="brand" aria-label="Abrir salas"><span>RainRoom</span><small><i id="rn" style="font-style:normal"></i> &#8964;</small></button>
- <div id="pop" role="group" aria-label="Volumen"><b></b><input type="range" min="0" max="1" step=".01" aria-label="Volumen"><output></output></div>
+ <div id="pop" role="group" aria-label="Volumen"><b></b><input type="range" min="0" max="1" step=".01" aria-label="Volumen"><o></o></div>
  <nav id="dock" aria-label="Sonidos"></nav>
  <section id="sheet" role="dialog" aria-label="Salas y mezcla">
   <div id="shHead"><div class="grip"></div><button class="x" id="shClose" aria-label="Cerrar">&#10005;</button>
    <div id="tabs" role="tablist"><button role="tab">Salas</button><button role="tab">Sonidos</button><button role="tab">Widgets</button><button role="tab">Ajustes</button><i id="tind"></i></div></div>
   <div class="pn"><div id="rooms"></div></div>
-  <div class="pn"><div class="chips" id="pres"></div><div class="row" id="vrow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10zM16.5 9a4 4 0 0 1 0 6"/></svg></span><div class="rc"><div class="rt"><span>Volumen general</span><output id="mvv"></output></div><input type="range" id="mv" min="0" max="1" step=".01" aria-label="Volumen general"></div></div><div id="mix"></div>
-   <div class="row" id="grow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 4c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg></span><div class="rc"><div class="rt"><span>Gotas</span><output id="intv"></output></div><input type="range" id="int" min="0" max="1" step=".05" aria-label="Intensidad de las gotas"></div></div>
+  <div class="pn"><div class="chips" id="pres"></div><div class="row" id="vrow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10zM16.5 9a4 4 0 0 1 0 6"/></svg></span><div class="rc"><div class="rt"><span>Volumen general</span><output id="mvv"></o></div><input type="range" id="mv" min="0" max="1" step=".01" aria-label="Volumen general"></div></div><div id="mix"></div>
+   <div class="row" id="grow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 4c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg></span><div class="rc"><div class="rt"><span>Gotas</span><output id="intv"></o></div><input type="range" id="int" min="0" max="1" step=".05" aria-label="Intensidad de las gotas"></div></div>
    <p class="hint">Llévalo a 0 para una sala sin lluvia.</p></div>
   <div class="pn"><p class="hint">Toca para añadir o quitar. Arrástralos por la pantalla y ciérralos con la ×.</p><div id="wsel" class="chips"></div></div>
   <div class="pn"><h3>Noche</h3><div id="nsel" class="chips"></div><h3>Tu foto</h3><div class="chips"><button class="chip" id="fabP">Subir foto</button><button class="chip" id="fabX">Quitar mi foto</button></div></div>
