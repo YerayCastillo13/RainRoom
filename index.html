@@ -2,27 +2,56 @@
 <html lang="es"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#060a10">
-<title>Guías de sonidos ambientales · RainRoom</title>
-<meta name="description" content="Mezclas de sonidos ambientales para dormir, concentrarte o relajarte, listas para abrir en RainRoom.">
-<link rel="canonical" href="https://rainrooms.vercel.app/guias/">
-<meta property="og:site_name" content="RainRoom"><meta property="og:type" content="article">
-<meta property="og:title" content="Guías de sonidos ambientales · RainRoom"><meta property="og:description" content="Mezclas de sonidos ambientales para dormir, concentrarte o relajarte, listas para abrir en RainRoom.">
-<meta property="og:url" content="https://rainrooms.vercel.app/guias/"><meta property="og:locale" content="es_ES">
+<title>RainRoom · Sonidos ambientales para dormir, estudiar y relajarte</title>
+<meta name="description" content="Crea tu propio espacio: elige un ambiente, mezcla sonidos como lluvia, viento o fuego y añade widgets para dormir, estudiar o desconectar. Gratis y sin registro.">
+<link rel="canonical" href="https://rainrooms.vercel.app/">
+<meta property="og:site_name" content="RainRoom">
+<meta property="og:title" content="RainRoom · Sonidos ambientales para dormir, estudiar y relajarte">
+<meta property="og:description" content="Tu propio espacio digital: ambientes y sonidos a tu medida. Gratis y sin registro.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://rainrooms.vercel.app/">
+<meta property="og:locale" content="es_ES">
 <meta property="og:image" content="https://rainrooms.vercel.app/assets/og-image.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="RainRoom: sonidos ambientales para dormir, estudiar y relajarte">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RainRoom · Sonidos ambientales para dormir, estudiar y relajarte">
+<meta name="twitter:description" content="Tu propio espacio digital: ambientes y sonidos a tu medida.">
+<meta name="twitter:image" content="https://rainrooms.vercel.app/assets/og-image.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23060a10'/%3E%3Cpath d='M16 6c4 6 7 9 7 13a7 7 0 0 1-14 0c0-4 3-7 7-13z' fill='%239fd0ff'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/guias/guias.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="RainRoom">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"RainRoom","url":"https://rainrooms.vercel.app/","description":"Espacio personal con ambientes y sonidos mezclables para dormir, estudiar o relajarse.","applicationCategory":"LifestyleApplication","operatingSystem":"Web","inLanguage":"es","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"}}</script>
+<link rel="stylesheet" href="css/style.css">
+<style>.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}</style>
 </head><body>
-<header><a href="/">RainRoom</a><nav aria-label="Principal"><a href="/guias/">Guías</a></nav></header>
-<main>
-<h1>Guías de sonidos ambientales</h1>
-<p class="lead">Mezclas pensadas para momentos concretos. Cada una se abre en RainRoom lista para sonar, y puedes cambiarla a tu gusto.</p>
-<div class="grid">
-<a class="card" href="/guias/lluvia-para-dormir"><strong>Sonidos de lluvia para dormir</strong><span>Lluvia suave y chimenea, con fundido para apagarse sola.</span></a>
-<a class="card" href="/guias/sonidos-para-concentrarse"><strong>Sonidos para concentrarte y estudiar</strong><span>Lluvia y tráfico lejano, sin sobresaltos.</span></a>
-<a class="card" href="/guias/tormenta-relajante"><strong>Tormenta relajante</strong><span>Lluvia intensa, viento y truenos desde un refugio.</span></a>
-</div>
-<a class="cta" href="/">Abrir RainRoom</a>
+<noscript>RainRoom necesita JavaScript para funcionar.</noscript>
+<main class="sr-only">
+ <h1>RainRoom: sonidos ambientales para dormir, estudiar y relajarte</h1>
+ <p>Elige un ambiente, mezcla los sonidos que quieras (lluvia, viento, fuego y más), usa el temporizador para dormir y añade widgets para concentrarte. Gratis y sin registro.</p>
 </main>
-<footer><p>RainRoom · Gratis y sin registro · <a href="/">Volver a la sala</a><br><a href="/legal/privacidad">Privacidad</a> · <a href="/legal/aviso-legal">Aviso legal</a> · <a href="/legal/cookies">Cookies</a></p></footer>
+<canvas id="gl"></canvas><div id="wl"></div><div id="veil"></div>
+<div id="ui">
+ <button id="brand" aria-label="Abrir salas"><span class="mast" aria-hidden="true"><span>Rain</span><span>Room.</span></span><small><i id="rn" style="font-style:normal"></i> &#8964;</small></button>
+ <div id="stt" role="status"><i></i><span></span></div>
+ <div id="pop" role="group" aria-label="Volumen"><b></b><input type="range" min="0" max="1" step=".01" aria-label="Volumen"><o></o></div>
+ <nav id="dock" aria-label="Sonidos"></nav>
+ <section id="sheet" role="dialog" aria-label="Salas y mezcla">
+  <div id="shHead"><div class="grip"></div><button class="x" id="shClose" aria-label="Cerrar">&#10005;</button>
+   <div id="tabs" role="tablist"><button role="tab">Salas</button><button role="tab">Sonidos</button><button role="tab">Widgets</button><button role="tab">Ajustes</button><i id="tind"></i></div></div>
+  <div class="pn"><div id="rooms"></div></div>
+  <div class="pn"><div class="chips" id="pres"></div><div class="row" id="vrow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10zM16.5 9a4 4 0 0 1 0 6"/></svg></span><div class="rc"><div class="rt"><span>Volumen general</span><output id="mvv"></o></div><input type="range" id="mv" min="0" max="1" step=".01" aria-label="Volumen general"></div></div><div id="mix"></div>
+   <div class="row" id="grow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 4c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg></span><div class="rc"><div class="rt"><span>Gotas</span><output id="intv"></o></div><input type="range" id="int" min="0" max="1" step=".05" aria-label="Intensidad de las gotas"></div></div>
+   <p class="hint">Llévalo a 0 para una sala sin lluvia.</p></div>
+  <div class="pn"><p class="hint">Toca para añadir o quitar. Arrástralos por la pantalla y ciérralos con la ×.</p><div id="wsel" class="chips"></div></div>
+  <div class="pn"><h3>Noche</h3><div id="nsel" class="chips"></div><h3>Tu foto</h3><div class="chips"><button class="chip" id="fabP">Subir foto</button><button class="chip" id="fabX">Quitar mi foto</button></div><h3>Guías</h3><div class="chips"><a class="chip" href="/guias/" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Mezclas para dormir, estudiar y relajarte</a></div><h3>Legal</h3><div class="chips"><a class="chip" href="/legal/privacidad" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Privacidad</a><a class="chip" href="/legal/aviso-legal" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Aviso legal</a><a class="chip" href="/legal/cookies" style="display:inline-flex;align-items:center;text-decoration:none;color:inherit">Cookies</a></div></div>
+ </section>
+</div>
+<input type="file" id="file" accept="image/*" hidden>
+<div id="msg">Toca la pantalla para activar el sonido</div>
+<script src="js/rooms.js" defer></script>
+<script src="js/widgets.js" defer></script>
+<script src="js/app.js" defer></script>
+<script>(()=>{const d=document.getElementById("dock"),s=document.getElementById("stt"),t=s.lastChild;let on=false;const u=()=>{const n=on?d.querySelectorAll(".snd.on").length:0;s.classList.toggle("on",n>0);t.textContent=n?n+(n>1?" sonidos":" sonido"):"En silencio"};addEventListener("pointerdown",()=>{on=true;u()},{once:true});new MutationObserver(u).observe(d,{subtree:true,attributes:true,attributeFilter:["class"]});u()})()</script>
 </body></html>
