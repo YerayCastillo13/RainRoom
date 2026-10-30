@@ -2,6 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://rainrooms.vercel.app/</loc>
-    <lastmod>2026-10-24</lastmod>
+    <lastmod>2026-10-27</lastmod>
+  </url>
+  <url>
+    <loc>https://rainrooms.vercel.app/guias/</loc>
+    <lastmod>2026-10-27</lastmod>
+  </url>
+  <url>
+    <loc>https://rainrooms.vercel.app/guias/lluvia-para-dormir</loc>
+    <lastmod>2026-10-27</lastmod>
+  </url>
+  <url>
+    <loc>https://rainrooms.vercel.app/guias/sonidos-para-concentrarse</loc>
+    <lastmod>2026-10-27</lastmod>
+  </url>
+  <url>
+    <loc>https://rainrooms.vercel.app/guias/tormenta-relajante</loc>
+    <lastmod>2026-10-27</lastmod>
   </url>
 </urlset>

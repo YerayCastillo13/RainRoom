@@ -276,6 +276,9 @@ addEventListener("pointerdown",unlock);
 addEventListener("pagehide",save);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});document.addEventListener("pointerdown",e=>{if(popK&&!pop.contains(e.target)&&!e.target.closest("#dock"))hidePop();if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
 {let sx=0,sy=0,st=0;cv.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;st=performance.now()});
  cv.addEventListener("pointerup",e=>{const dx=e.clientX-sx;if(Math.abs(dx)>80&&Math.abs(e.clientY-sy)<70&&performance.now()-st<700){const L=photo?ROOMS.concat([PHOTO]):ROOMS,i=L.findIndex(r=>r.id===S.room);buzz(10);selectRoom(L[(i+(dx<0?1:-1)+L.length)%L.length].id)}})}
+try{const q=new URLSearchParams(location.search),id=q.get("sala"),R=ROOMS.find(x=>x.id===id);
+ if(R){const snd={};(q.get("mezcla")||"").split(",").forEach(p=>{const[k,v]=p.split(":"),n=parseFloat(v);if(SRC[k]&&n>=0)snd[k]={v:clamp(n,0,1),on:n>.02}});
+  const g=parseFloat(q.get("gotas"));S.room=id;S.mix=S.mix||{};S.mix[id]={snd,int:g>=0?clamp(g,0,1):R.int,w:null};history.replaceState(null,"",location.pathname)}}catch(e){}
 resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image();im.onload=()=>{imgs[r.id]=im;delete thumbs[r.id];if(S.room===r.id)buildScene();renderRooms()};im.src=r.src}
  if(r.video){const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");v.preload="auto";v.onloadeddata=()=>{vids[r.id]=v;if(S.room===r.id)useVid()};v.src=r.video}});idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
 })();
