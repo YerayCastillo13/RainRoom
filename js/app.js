@@ -76,7 +76,7 @@ const buildTabs=()=>{document.querySelectorAll("#tabs button").forEach((b,i)=>b.
  const PRESETS=[{n:"Suave",m:{rain:.4,wind:.12},i:.45},{n:"Tormenta",m:{rain:.85,thunder:.6,wind:.35},i:.95},{n:"Concentración",m:{rain:.45,traffic:.18},i:.5},{n:"Dormir",m:{rain:.35,fire:.2},i:.35}];
  PRESETS.forEach(p=>{const b=document.createElement("button");b.className="chip";b.textContent=p.n;b.onclick=()=>{buzz(8);for(const k in SRC){const v=p.m[k];M.vol(k,v||M.ch[k].v);M.set(k,!!v)}S.int=p.i;syncUI();save()};$("#pres").appendChild(b)})};
 const buildUI=()=>{
- for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;
+ for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.title=SRC[k].l;b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;
   let lp=0,long=false;
   b.onpointerdown=()=>{long=false;clearTimeout(lp);lp=setTimeout(()=>{long=true;buzz(12);showPop(k,b)},420)};
   b.onpointerup=()=>{clearTimeout(lp);if(!long)tapSound(k,b)};
@@ -90,7 +90,7 @@ const buildUI=()=>{
   inp.oninput=()=>{const v=+inp.value;M.vol(k,v);M.set(k,v>.02);syncUI(true)};inp.onchange=save;
   r.querySelector(".ic").onclick=()=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);buzz(8);syncUI();save()};
   $("#mix").appendChild(r);mixEl[k]=inp}
- const m=document.createElement("button");m.className="snd";m.setAttribute("aria-label","Salas y mezcla");m.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
+ const m=document.createElement("button");m.className="snd";m.setAttribute("aria-label","Salas y mezcla");m.title="Salas y mezcla";m.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
  m.onclick=()=>sheet.classList.add("open");dock.appendChild(m);$("#shClose").onclick=()=>sheet.classList.remove("open");
  document.addEventListener("input",e=>{if(e.target.type==="range")fillR(e.target)});
  const hd=$("#shHead");let sy=0,dy=0,t0=0,dg=false;
@@ -125,11 +125,12 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec2 v;uniform sampler2D uS,uB,uD;uniform vec2 uP;uniform float uF,uL,uT,uK,uM;uniform vec2 uR;uniform vec4 uG;uniform vec3 uGc;
+varying vec2 v;uniform sampler2D uS,uB,uD;uniform vec2 uP;uniform float uF,uL,uT,uK,uM,uW,uX;uniform vec2 uR;uniform vec4 uG;uniform vec3 uGc;
 float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h2(i),h2(i+vec2(1.,0.)),f.x),mix(h2(i+vec2(0.,1.)),h2(i+vec2(1.,1.)),f.x),f.y);}
 void main(){
  vec2 bg=(v-.5)*.84+.5+uP*.06;
+ bg.x+=uW*.004*sin(uK*1.7+v.y*4.)*(.55+.45*sin(uK*.6)); // el viento hace oscilar la escena
  vec4 d=texture2D(uD,v);
  vec2 n=(d.rg-.5)*2.;float nl=min(length(n),1.);
  float clr=smoothstep(.2,.6,d.b);
@@ -141,7 +142,7 @@ void main(){
  c-=pow(max(-lit,0.),2.)*rim*.3*clr;
  c+=(1.-smoothstep(0.,.22,distance(n,L*.55)))*.9*clr;
  c+=vec3(.6,.7,.8)*(1.-smoothstep(0.,.5,distance(n,-L*.5)))*.12*clr*step(.05,nl);
- float ms=vn(bg*vec2(3.,2.)+vec2(uK*.03,uK*.012))*.6+vn(bg*vec2(7.,4.)-vec2(uK*.05,0.))*.4;c+=vec3(.55,.65,.78)*ms*ms*uM*(.25+.75*(1.-clr));vec2 gp=bg-uG.xy;gp.x*=uR.x/uR.y;float fl=.72+.28*vn(vec2(uK*5.,3.))+.1*sin(uK*17.);c+=uGc*uG.w*fl*exp(-dot(gp,gp)/(uG.z*uG.z));vec2 q=v-.5;c*=1.-.45*dot(q,q);
+ float ms=vn(bg*vec2(3.,2.)-vec2(uX*.03,-uK*.012))*.6+vn(bg*vec2(7.,4.)-vec2(uX*.05,0.))*.4;c+=vec3(.55,.65,.78)*ms*ms*(uM+uW*.3)*(.25+.75*(1.-clr));vec2 gp=bg-uG.xy;gp.x*=uR.x/uR.y;float fl=.72+.28*vn(vec2(uK*5.,3.))+.1*sin(uK*17.);c+=uGc*uG.w*fl*exp(-dot(gp,gp)/(uG.z*uG.z));vec2 q=v-.5;c*=1.-.45*dot(q,q);
  vec3 bl=texture2D(uB,bg).rgb;c+=pow(max(bl-.3,0.),vec3(1.4))*.55*(.85+.15*sin(uK*1.2+vn(bg*6.)*6.28));c+=c*uL*1.4+bl*uL*.35;float gr=fract(sin(dot(v*997.+uT,vec2(12.9898,78.233)))*43758.5453);c+=(gr-.5)*.035;gl_FragColor=vec4(c,1.);}`;
 const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
 const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
@@ -152,7 +153,7 @@ const mk=u=>{const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+u);gl.bindT
 const upl=(u,t,src)=>{gl.activeTexture(gl.TEXTURE0+u);gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src)};
 const tS=mk(0),tB=mk(1),tD=mk(2);
 ["uS","uB","uD"].forEach((n,i)=>gl.uniform1i(gl.getUniformLocation(pr,n),i));
-const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.getUniformLocation(pr,"uL"),uT=gl.getUniformLocation(pr,"uT"),uR=gl.getUniformLocation(pr,"uR"),uK=gl.getUniformLocation(pr,"uK"),uM=gl.getUniformLocation(pr,"uM"),uG=gl.getUniformLocation(pr,"uG"),uGc=gl.getUniformLocation(pr,"uGc");
+const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.getUniformLocation(pr,"uL"),uT=gl.getUniformLocation(pr,"uT"),uR=gl.getUniformLocation(pr,"uR"),uK=gl.getUniformLocation(pr,"uK"),uM=gl.getUniformLocation(pr,"uM"),uW=gl.getUniformLocation(pr,"uW"),uX=gl.getUniformLocation(pr,"uX"),uG=gl.getUniformLocation(pr,"uG"),uGc=gl.getUniformLocation(pr,"uGc");
 
 let W,H,photo=null,vid=null,vf=false;const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
@@ -170,30 +171,39 @@ const spr=document.createElement("canvas");spr.width=spr.height=64;
   if(d<1){const k=Math.pow(d,.2);id.data[o]=128+127*dx*k;id.data[o+1]=128+127*dy*k;id.data[o+2]=255;const t=clamp((1-d)/.18,0,1);id.data[o+3]=255*t*t*(3-2*t)}}
  x.putImageData(id,0,0)}
 const wet=document.createElement("canvas"),dcv=document.createElement("canvas"),wc=wet.getContext("2d"),dc=dcv.getContext("2d");
+const mic=document.createElement("canvas"),mc=mic.getContext("2d");let mN=0;
+// Condensación: miles de microgotas fijas; las gotas que resbalan las arrastran y se van regenerando
+const mDrop=()=>{const r=rand(.55,1.5),x=rand(0,mic.width),y=rand(0,mic.height);mc.drawImage(spr,x-r,y-r,2*r,2*r)};
 let B=[],ds=1,fadeT=0,frameN=0;
-const spawn=(x,y,r)=>B.push({x,y,r,v:0,a:rand(.85,1.2),lim:rand(3.4,5.6),dead:false});
+const spawn=(x,y,r)=>B.push({x,y,r,v:0,a:rand(.85,1.2),lim:rand(3.4,5.6),dx:0,t:1,dead:false});
 const sizeDrops=()=>{ds=clamp(960/Math.max(W,H),.5,1)*[1,.85,.7][qual];wet.width=dcv.width=Math.round(W*ds);wet.height=dcv.height=Math.round(H*ds);
  wc.fillStyle="rgb(128,128,0)";wc.fillRect(0,0,wet.width,wet.height);B=[];
- for(let i=0;i<110;i++)spawn(rand(0,wet.width),rand(0,wet.height),.9+Math.pow(Math.random(),2.4)*5)};
-let acc=0;
+ mic.width=wet.width;mic.height=wet.height;mN=Math.min(4200,wet.width*wet.height/200)*[1,.7,.45][qual];for(let i=0;i<mN;i++)mDrop();
+ for(let i=0;i<150;i++)spawn(rand(0,wet.width),rand(0,wet.height),.9+Math.pow(Math.random(),1.9)*6)};
+let acc=0,wacc=0,WS=0,WG=0,WX=0,wph=0;const GU={on:false,t:3,tgt:0,dir:1,env:0,ds:1};
 const sim=dt=>{const I=S.int,cap=I<.05?0:lerp(90,340,I)*[1,.6,.35][qual],w=wet.width,h=wet.height;
- acc+=I<.05?0:dt*lerp(3,60,I);while(acc>1){acc--;spawn(rand(0,w),rand(0,h),.9+Math.pow(Math.random(),2.4)*5)}
- for(const b of B){if(b.v===0){if(b.r>b.lim||Math.random()<dt*.012*I*b.r)b.v=.4}
-  else{const y0=b.y;b.v=clamp(b.v+((.6+b.r*.45)-b.v)*dt*3+(Math.random()-.5)*.3,.1,4.5);if(Math.random()<dt*.7)b.v*=.25;
-   b.y+=b.v*dt*60;b.x+=Math.sin(b.y*.07)*.15;b.r-=dt*.12;
-   wc.lineCap="round";wc.strokeStyle="rgba(128,128,255,.4)";wc.lineWidth=b.r*2;wc.beginPath();wc.moveTo(b.x,y0);wc.lineTo(b.x,b.y);wc.stroke();
-   wc.strokeStyle="rgb(128,128,255)";wc.lineWidth=b.r*1.2;wc.stroke();
-   if(Math.random()<dt*2.5&&B.length<cap+40)spawn(b.x+rand(-b.r,b.r)*.5,b.y-rand(2,10),rand(.6,1.1));
-   if(b.r<1.5)b.v=0}
-  if(b.y>h+10)b.dead=true}
+ acc+=I<.05?0:dt*lerp(3,60,I);while(acc>1){acc--;spawn(rand(0,w),rand(0,h),.9+Math.pow(Math.random(),1.9)*6)}
+ // Viento: lanza gotas pequeñas que cruzan el cristal en diagonal
+ wacc+=I<.05?0:dt*WG*14;while(wacc>1){wacc--;B.push({x:rand(-w*.1,w*1.1),y:rand(0,h*.8),r:rand(2.1,3.6),v:rand(.8,1.6),a:rand(.9,1.25),lim:rand(3.4,5.6),dx:0,t:.4,dead:false})}
+ for(const b of B){if(b.v===0){if(b.r>b.lim||(b.r>2.2&&Math.random()<dt*(.012*I+WG*.1)*b.r))b.v=.4}
+  else{const y0=b.y,x0=b.x;b.v=clamp(b.v+((.6+b.r*.45+WG*1.4)-b.v)*dt*3+(Math.random()-.5)*.3,.1,6);if(Math.random()<dt*.7)b.v*=.25;
+   b.y+=b.v*dt*60;b.dx=Math.sin(b.y*.07)*(.15+WG*.5)+WX*(.45+.55*Math.min(1,b.v/2));b.x+=b.dx*dt*60;b.r-=dt*.03;
+   wc.lineCap="round";wc.strokeStyle="rgba(128,128,255,"+.4*b.t+")";wc.lineWidth=b.r*1.7;wc.beginPath();wc.moveTo(x0,y0);wc.lineTo(b.x,b.y);wc.stroke();
+   wc.strokeStyle="rgba(128,128,255,"+b.t+")";wc.lineWidth=b.r*1.05;wc.stroke();
+   mc.save();mc.globalCompositeOperation="destination-out";mc.lineCap="round";mc.lineWidth=b.r*1.7;mc.strokeStyle="#000";mc.beginPath();mc.moveTo(x0,y0);mc.lineTo(b.x,b.y);mc.stroke();mc.restore();
+   if(Math.random()<dt*2.5&&B.length<cap+40){spawn(b.x+rand(-b.r,b.r)*.5,b.y-rand(2,10),rand(.6,1.1));b.r-=.02}
+   if(b.r<1.1)b.v=0}
+  if(b.y>h+10||b.x>w*1.2||b.x<-w*.2)b.dead=true}
  // fusión: una gota que resbala absorbe las que toca; las quietas se funden cada pocos fotogramas
  frameN++;
  for(let i=0;i<B.length;i++){const a=B[i];if(a.dead||(a.v===0&&frameN%6))continue;
   for(let j=0;j<B.length;j++){const o=B[j];if(i===j||o.dead||(a.v===0&&o.v>0))continue;
-   const dx=a.x-o.x,dy=a.y-o.y,m=(a.r+o.r)*.8;if(dx*dx+dy*dy<m*m&&(a.r>=o.r)){a.r=Math.min(9,Math.hypot(a.r,o.r*.9));o.dead=true}}}
- B=B.filter(b=>!b.dead);if(B.length>cap)B.splice(0,B.length-cap);
- fadeT+=dt;if(fadeT>.4){fadeT=0;wc.fillStyle="rgba(128,128,0,.05)";wc.fillRect(0,0,w,h)}};
-const compose=()=>{dc.drawImage(wet,0,0);for(const b of B){const s=b.v>0?Math.min(1,b.v/2):0,w=2*b.r*(1-.15*s),h=2*b.r*(1+.55*s);const ww=w*b.a;dc.drawImage(spr,b.x-ww/2,b.y-h/2,ww,h)}};
+   const dx=a.x-o.x,dy=a.y-o.y,m=(a.r+o.r)*(a.v>0?1:.8);if(dx*dx+dy*dy<m*m&&(a.r>=o.r)){a.r=Math.min(11,Math.hypot(a.r,o.r*.95));o.dead=true}}}
+ B=B.filter(b=>!b.dead);
+ // Si hay demasiadas, se retiran antes las gotas quietas más antiguas: una gota en movimiento nunca desaparece a mitad de camino
+ let ex=B.length-cap;if(ex>0){for(let i=0;i<B.length&&ex>0;i++)if(B[i].v===0){B[i].dead=true;ex--}B=B.filter(b=>!b.dead)}
+ fadeT+=dt;if(fadeT>.4){fadeT=0;wc.fillStyle="rgba(128,128,0,"+(.05+.07*Math.min(1,WG))+")";wc.fillRect(0,0,w,h);for(let i=0;i<mN*.02;i++)mDrop()}};
+const compose=()=>{dc.drawImage(wet,0,0);if(S.int>=.05){dc.globalAlpha=.3+.6*S.int;dc.drawImage(mic,0,0);dc.globalAlpha=1}for(const b of B){const s=b.v>0?Math.min(1,b.v/2):0,w=2*b.r*(1-.15*s),h=2*b.r*(1+(WG>.08?.3:.55)*s);const ww=w*b.a;if(b.v>0&&WG>.08){dc.save();dc.translate(b.x,b.y);dc.rotate(-Math.atan2(b.dx,Math.max(.3,b.v)));dc.drawImage(spr,-ww/2,-h/2,ww,h);dc.restore()}else dc.drawImage(spr,b.x-ww/2,b.y-h/2,ww,h)}};
 
 /* ---------- WIDGETS: una instancia por tipo y sala, arrastrables, posición guardada en proporción ---------- */
 const wl=$("#wl"),wi={},wchip={};
@@ -229,7 +239,12 @@ const buildN=()=>{[["n","Modo noche"],["w","Pantalla encendida"]].forEach(([k,t]
  b.onclick=()=>{if(k==="n")S.night=!S.night;else{S.wake=!S.wake;setWake(S.wake)}applyNight();save()};$("#nsel").appendChild(b);nchip[k]=b});applyNight()};
 const placeW=o=>{o.el.style.left=o.x*Math.max(0,W-o.el.offsetWidth)+"px";o.el.style.top=o.y*Math.max(0,H-o.el.offsetHeight-96)+"px"};
 const addW=(t,st)=>{if(wi[t]||!WIDGETS[t])return;const d=WIDGETS[t],o=wi[t]={x:st&&st.x!=null?st.x:.08,y:st&&st.y!=null?st.y:.14,cfg:Object.assign(d.cfg(),st&&st.cfg)};
- const e=o.el=document.createElement("section");e.className="wd";e.setAttribute("aria-label",d.name);wl.appendChild(e);o.un=d.mount(e,o.cfg,{save,chime,fadeOut,sleepArm,sleepCancel,sleepEnd:()=>sleepEnd})||(()=>{});placeW(o);
+ const e=o.el=document.createElement("section");e.className="wd";e.setAttribute("aria-label",d.name);wl.appendChild(e);o.un=d.mount(e,o.cfg,{save,chime,fadeOut,sleepArm,sleepCancel,sleepEnd:()=>sleepEnd})||(()=>{});
+  // Posición por defecto: bajo el título y alineada con él, escalonada para que los widgets no se tapen entre sí
+  if(!(st&&st.x!=null)||!(st&&st.y!=null)){const bb=$("#brand").getBoundingClientRect(),n=Object.keys(wi).length-1;
+   if(!(st&&st.x!=null))o.x=clamp(bb.left/Math.max(1,W-e.offsetWidth),0,1);
+   if(!(st&&st.y!=null))o.y=clamp((bb.bottom+16+n*(e.offsetHeight+12))/Math.max(1,H-e.offsetHeight-96),0,1)}
+  placeW(o);
  const x=document.createElement("button");x.className="wx";x.textContent="×";x.setAttribute("aria-label","Quitar "+d.name);x.onclick=()=>{buzz(8);closeW(t)};e.appendChild(x);
  e.onpointerdown=ev=>{if(ev.target.closest("button,textarea,input"))return;const r=e.getBoundingClientRect(),dx=ev.clientX-r.left,dy=ev.clientY-r.top;e.setPointerCapture(ev.pointerId);e.classList.add("d");
   e.onpointermove=m=>{o.x=clamp((m.clientX-dx-wl.getBoundingClientRect().left)/Math.max(1,W-e.offsetWidth),0,1);o.y=clamp((m.clientY-dy-wl.getBoundingClientRect().top)/Math.max(1,H-e.offsetHeight-96),0,1);placeW(o)};
@@ -254,8 +269,13 @@ const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}if(vid
  fa=fa*.97+dt*.03;if(t-qT>4000&&fa>(S.night?.06:.032)&&qual<2){qual++;qT=t;fa=.016;resize();requestAnimationFrame(frame);return}
  par.x=lerp(par.x,par.tx+Math.sin(t/7000)*.3,.06);par.y=lerp(par.y,par.ty+Math.cos(t/9000)*.2,.06);wl.style.transform=`translate3d(${(-par.x*7).toFixed(1)}px,${(-par.y*5).toFixed(1)}px,0)`;
  nextFl-=dt;if(nextFl<=0){const on=M.ch.thunder.on&&boomFn;nextFl=on?rand(7,18):2;if(on){strike=t/1e3;boomFn(rand(.8,3))}}
+ {const wt=M.ch.wind.on?M.ch.wind.v:0;WS+=(wt-WS)*Math.min(1,dt*1.5);
+ // Rachas: periodos de calma y rachas de duración, fuerza y dirección aleatorias; con más viento, más frecuentes y largas
+ GU.t-=dt;if(GU.t<=0){if(GU.on){GU.on=false;GU.t=rand(5,15)*(1.55-WS)}else{GU.on=true;GU.t=rand(2.5,7)*(.6+WS);GU.tgt=rand(.4,1);GU.dir=(Math.random()<.5?-1:1)*rand(.6,1.1)}}
+ GU.env+=((GU.on?GU.tgt:.04)-GU.env)*Math.min(1,dt*(GU.on?1.3:.6));GU.ds+=(GU.dir-GU.ds)*Math.min(1,dt*1.2);
+ WG=WS*GU.env*(.6+.8*WS);WX=WG*2.6*GU.ds;wph+=dt*(.2+WG*6*GU.ds)}
  sim(dt);compose();upl(2,tD,dcv);
- gl.uniform2f(uP,par.x,par.y);fogV=lerp(fogV,S.int<.05?0:.7+.2*S.int,.04);gl.uniform1f(uF,fogV);gl.uniform1f(uL,lf(t/1e3-strike));gl.uniform1f(uT,(t%1e4)/1e3);gl.uniform1f(uK,t/1e3);gl.uniform1f(uM,curFx.mist||0);const gg=curFx.glow||{x:0,y:0,r:1,s:0,c:[0,0,0]};gl.uniform4f(uG,gg.x,gg.y,gg.r,gg.s);gl.uniform3f(uGc,gg.c[0],gg.c[1],gg.c[2]);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(frame)};
+ gl.uniform2f(uP,par.x,par.y);fogV=lerp(fogV,S.int<.05?0:.7+.2*S.int,.04);gl.uniform1f(uF,fogV);gl.uniform1f(uL,lf(t/1e3-strike));gl.uniform1f(uT,(t%1e4)/1e3);gl.uniform1f(uK,t/1e3);gl.uniform1f(uM,curFx.mist||0);gl.uniform1f(uW,Math.min(WG,1.4));gl.uniform1f(uX,wph);const gg=curFx.glow||{x:0,y:0,r:1,s:0,c:[0,0,0]};gl.uniform4f(uG,gg.x,gg.y,gg.r,gg.s);gl.uniform3f(uGc,gg.c[0],gg.c[1],gg.c[2]);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(frame)};
 
 /* ---------- FOTO PROPIA (se guarda en el dispositivo si el navegador lo permite) ---------- */
 const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("rainroom",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);
@@ -269,9 +289,10 @@ $("#fabX").onclick=()=>{photo=null;delete thumbs.photo;$("#fabX").style.display=
 const resize=()=>{const d=Math.min(devicePixelRatio||1,[2,1.5,1][qual]);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
 M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%"};rg.onchange=save;
-let idle;const wake=()=>{$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(!sheet.classList.contains("open"))$("#ui").classList.add("h")},5000)};
+// La interfaz se oculta tras unos segundos sin tocar, pero solo cuando el usuario ya ha empezado (si no, la primera visita no vería ningún control)
+let idle,started=false;const wake=()=>{$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(started&&!sheet.classList.contains("open"))$("#ui").classList.add("h")},7000)};
 addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake();
-const unlock=()=>{removeEventListener("pointerdown",unlock);ensure();ka.play().catch(()=>{});if(S.tip)$("#msg").style.opacity=0;else{$("#msg").textContent="Toca un sonido para activarlo · mantén pulsado para ajustar su volumen";S.tip=1;save();setTimeout(()=>{$("#msg").style.opacity=0},4500)}gyro();if(S.wake)setWake(true);rainP.then(()=>{M.resume();syncUI();msMeta()})};
+const unlock=()=>{removeEventListener("pointerdown",unlock);started=true;ensure();ka.play().catch(()=>{});if(S.tip)$("#msg").style.opacity=0;else{$("#msg").textContent="Toca un sonido para activarlo · mantén pulsado para ajustar su volumen";S.tip=1;save();setTimeout(()=>{$("#msg").style.opacity=0},4500)}gyro();if(S.wake)setWake(true);rainP.then(()=>{M.resume();syncUI();msMeta()})};
 addEventListener("pointerdown",unlock);
 addEventListener("pagehide",save);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});document.addEventListener("pointerdown",e=>{if(popK&&!pop.contains(e.target)&&!e.target.closest("#dock"))hidePop();if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
 {let sx=0,sy=0,st=0;cv.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;st=performance.now()});

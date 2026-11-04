@@ -206,3 +206,20 @@ body:has(#ui.h){cursor:none}
 #brand small{animation:rise .9s var(--ease) .5s backwards}
 #stt{animation:rise .9s var(--ease) .5s backwards}
 #dock{animation:dockIn .9s var(--ease) .6s backwards}
+
+/* ---- Fase 5: usabilidad ---- */
+/* El mensaje de bienvenida no debe quedar encima de la hoja de ajustes */
+body:has(#sheet.open) #msg{opacity:0!important}
+/* Hoja más baja y más transparente: así se sigue viendo la lluvia mientras se ajusta la mezcla */
+#sheet{max-height:min(68vh,620px);background:rgba(12,17,25,.74)}
+#shHead{background:rgba(12,17,25,.9)}
+.row{padding:6px 0}
+/* Texto mínimo legible (antes 10.5px) */
+#brand .kicker,#brand small,#stt,#pop output,.rt output,#msg,#sheet h3,#tabs button,.chip,.cd,.ph,.card.add span,.wd .rw button{font-size:11.5px}
+.hint{font-size:13px}
+/* Pestañas y chips: zona táctil cómoda */
+.chip{height:44px}
+@media (max-width:420px){#tabs button{letter-spacing:.08em}}
+/* Los iconos de "Volumen general" y "Gotas" heredaban el ancho de las etiquetas y descuadraban la columna */
+.row>span.ic{width:40px}
+.hint{margin-left:0}
