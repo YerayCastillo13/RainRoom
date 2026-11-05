@@ -107,7 +107,7 @@ const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
 const syncUI=light=>{for(const k in SRC){const c=M.ch[k],v=c.on?c.v:0;tg[k].classList.toggle("on",c.on);tg[k].style.setProperty("--v",v);rows[k].classList.toggle("off",!c.on);rows[k].querySelector("output").textContent=Math.round(v*100)+"%";
   if(light!==true||document.activeElement!==mixEl[k]){mixEl[k].value=v;fillR(mixEl[k])}}
  if(light!==true){$("#int").value=S.int;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%";$("#rn").textContent=roomDef().name;renderRooms();syncW();fillR($("#int"))}};
-const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};msMeta();S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);vid=vids[id]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
+const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};curAnim=d.anim||null;msMeta();S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);vid=vids[id]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
  if(first)return go();$("#veil").classList.add("on");setTimeout(()=>{go();$("#veil").classList.remove("on")},380)};
 
 /* ---------- ESCENA DE FONDO ---------- */
@@ -155,12 +155,14 @@ const tS=mk(0),tB=mk(1),tD=mk(2);
 ["uS","uB","uD"].forEach((n,i)=>gl.uniform1i(gl.getUniformLocation(pr,n),i));
 const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.getUniformLocation(pr,"uL"),uT=gl.getUniformLocation(pr,"uT"),uR=gl.getUniformLocation(pr,"uR"),uK=gl.getUniformLocation(pr,"uK"),uM=gl.getUniformLocation(pr,"uM"),uW=gl.getUniformLocation(pr,"uW"),uX=gl.getUniformLocation(pr,"uX"),uG=gl.getUniformLocation(pr,"uG"),uGc=gl.getUniformLocation(pr,"uGc");
 
-let W,H,photo=null,vid=null,vf=false;const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
+let W,H,photo=null,vid=null,vf=false,curAnim=null;const baseC=document.createElement("canvas");const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
-const buildScene=()=>{const L=vid?960:1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
+const buildScene=()=>{const L=vid?960:curAnim?1280:1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
  const im=S.room==="photo"?photo:imgs[S.room];if(im){const k=Math.max(sw/im.width,sh2/im.height),pw=im.width*k,ph=im.height*k;c.drawImage(im,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
- if(vid)vidFrame();else{upl(0,tS,sc);upl(1,tB,bc)}};
+ if(vid)vidFrame();else{if(curAnim){baseC.width=sw;baseC.height=sh2;baseC.getContext("2d").drawImage(sc,0,0)}upl(0,tS,sc);upl(1,tB,bc)}};
+const animFrame=t=>{const im=imgs[S.room];if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/im.width,sh/im.height),pw=im.width*k,ph=im.height*k;
+ c.globalCompositeOperation="source-over";c.globalAlpha=1;c.drawImage(baseC,0,0);ANIM.render(c,{x:(sw-pw)/2,y:(sh-ph)/2,w:pw,h:ph},t/1e3,curAnim);bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
 
 const vidFrame=()=>{if(!vid||vid.readyState<2)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/vid.videoWidth,sh/vid.videoHeight),pw=vid.videoWidth*k,ph=vid.videoHeight*k;
  c.drawImage(vid,(sw-pw)/2,(sh-ph)/2,pw,ph);bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
@@ -227,8 +229,8 @@ const revive=()=>{if(ctx&&unlocked&&anyOn()&&ctx.state!=="running")ctx.resume().
 document.addEventListener("visibilitychange",revive);addEventListener("pageshow",revive);setInterval(revive,3000);
 // Temporizador de sueño: el fundido se programa en el reloj de audio, así se apaga aunque iOS frene los temporizadores de la página
 const sleepDone=()=>{sleepEnd=0;fadeOut(25)};
-const sleepArm=m=>{const c=ensure();sleepEnd=Date.now()+m*60000;clearTimeout(sleepTm);sleepTm=setTimeout(sleepDone,m*60000);master.gain.cancelScheduledValues(c.currentTime);master.gain.setValueAtTime(.9,c.currentTime+m*60);master.gain.linearRampToValueAtTime(0,c.currentTime+m*60+25)};
-const sleepCancel=()=>{sleepEnd=0;clearTimeout(sleepTm);if(ctx){master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(.9,ctx.currentTime,.1)}};
+const sleepArm=m=>{const c=ensure();document.documentElement.dataset.sleep="1";sleepEnd=Date.now()+m*60000;clearTimeout(sleepTm);sleepTm=setTimeout(sleepDone,m*60000);master.gain.cancelScheduledValues(c.currentTime);master.gain.setValueAtTime(.9,c.currentTime+m*60);master.gain.linearRampToValueAtTime(0,c.currentTime+m*60+25)};
+const sleepCancel=()=>{sleepEnd=0;delete document.documentElement.dataset.sleep;clearTimeout(sleepTm);if(ctx){master.gain.cancelScheduledValues(ctx.currentTime);master.gain.setTargetAtTime(.9,ctx.currentTime,.1)}};
 const fadeOut=s=>{const c=ensure();master.gain.cancelScheduledValues(c.currentTime);master.gain.setTargetAtTime(0,c.currentTime,s/4);$("#veil").classList.add("sl");setTimeout(()=>{for(const k in M.ch)M.set(k,false);master.gain.cancelScheduledValues(ctx.currentTime);master.gain.value=.9;syncUI();save()},s*1000)};
 // Pantalla encendida (Wake Lock) y modo noche (atenuado + 30 fps para gastar menos batería)
 const setWake=async on=>{try{if(on&&navigator.wakeLock&&!wlk){wlk=await navigator.wakeLock.request("screen");wlk.onrelease=()=>{wlk=null}}else if(!on&&wlk){await wlk.release();wlk=null}}catch(e){}};
@@ -265,7 +267,7 @@ const gyro=async()=>{try{if(typeof DeviceOrientationEvent!=="undefined"&&DeviceO
 /* ---------- BUCLE ---------- */
 let last=0,nextFl=4,strike=-99,fogV=.8,curFx={};const lf=s=>s<0?0:Math.max(Math.exp(-s*10),s>.17?.8*Math.exp(-(s-.17)*6):0);
 let fc=0,qual=0,fa=.016,qT=0;
-const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}if(vid&&(vf=!vf))vidFrame();const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
+const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}if(vid&&(vf=!vf))vidFrame();else if(curAnim&&!vid&&(vf=!vf))animFrame(t);const dt=Math.min(.05,last?(t-last)/1000:.016);last=t;
  fa=fa*.97+dt*.03;if(t-qT>4000&&fa>(S.night?.06:.032)&&qual<2){qual++;qT=t;fa=.016;resize();requestAnimationFrame(frame);return}
  par.x=lerp(par.x,par.tx+Math.sin(t/7000)*.3,.06);par.y=lerp(par.y,par.ty+Math.cos(t/9000)*.2,.06);wl.style.transform=`translate3d(${(-par.x*7).toFixed(1)}px,${(-par.y*5).toFixed(1)}px,0)`;
  nextFl-=dt;if(nextFl<=0){const on=M.ch.thunder.on&&boomFn;nextFl=on?rand(7,18):2;if(on){strike=t/1e3;boomFn(rand(.8,3))}}
@@ -286,14 +288,20 @@ $("#file").onchange=async e=>{const f=e.target.files[0];if(f&&await setPhoto(f,t
 $("#fabX").onclick=()=>{photo=null;delete thumbs.photo;$("#fabX").style.display="none";if(S.room==="photo")selectRoom("city");else renderRooms();idb("del")};
 
 /* ---------- ARRANQUE ---------- */
+/* ---------- CONTROLES RÁPIDOS: pausa global (chip de estado), atajos de teclado y restablecer sala ---------- */
+const toggleAll=()=>{if(!unlocked)return;if(anyOn()){paused=Object.keys(M.ch).filter(k=>M.ch[k].on);paused.forEach(k=>M.set(k,false))}else{(paused.length?paused:["rain"]).forEach(k=>{if(M.ch[k].v<.05)M.vol(k,SRC[k].v);M.set(k,true)});paused=[]}buzz(8);syncUI();save()};
+const stt=$("#stt");stt.onclick=toggleAll;stt.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleAll()}};
+addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||(e.target.closest&&e.target.closest("input,textarea,select,button,[role=button]")))return;const ks=Object.keys(SRC),i=+e.key-1;
+ if(e.key===" "){e.preventDefault();toggleAll()}else if(i>=0&&i<ks.length)tapSound(ks[i],tg[ks[i]]);else if(e.key==="Escape")sheet.classList.remove("open");else if(e.key==="m"||e.key==="M")sheet.classList.toggle("open")});
+$("#rstRoom").onclick=()=>{buzz(10);delete S.mix[S.room];selectRoom(S.room)};
 const resize=()=>{const d=Math.min(devicePixelRatio||1,[2,1.5,1][qual]);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
 M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%"};rg.onchange=save;
 // La interfaz se oculta tras unos segundos sin tocar, pero solo cuando el usuario ya ha empezado (si no, la primera visita no vería ningún control)
-let idle,started=false;const wake=()=>{$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(started&&!sheet.classList.contains("open"))$("#ui").classList.add("h")},7000)};
+let idle,started=false;const wake=()=>{if(!sleepEnd)delete document.documentElement.dataset.sleep;$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(started&&!sheet.classList.contains("open"))$("#ui").classList.add("h")},7000)};
 addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake();
-const unlock=()=>{removeEventListener("pointerdown",unlock);started=true;ensure();ka.play().catch(()=>{});if(S.tip)$("#msg").style.opacity=0;else{$("#msg").textContent="Toca un sonido para activarlo · mantén pulsado para ajustar su volumen";S.tip=1;save();setTimeout(()=>{$("#msg").style.opacity=0},4500)}gyro();if(S.wake)setWake(true);rainP.then(()=>{M.resume();syncUI();msMeta()})};
-addEventListener("pointerdown",unlock);
+const unlock=()=>{removeEventListener("pointerdown",unlock);removeEventListener("keydown",unlock);started=true;ensure();ka.play().catch(()=>{});if(S.tip)$("#msg").style.opacity=0;else{$("#msg").textContent="Toca un sonido para activarlo · mantén pulsado para ajustar su volumen";S.tip=1;save();setTimeout(()=>{$("#msg").style.opacity=0},4500)}gyro();if(S.wake)setWake(true);rainP.then(()=>{M.resume();syncUI();msMeta()})};
+addEventListener("pointerdown",unlock);addEventListener("keydown",unlock);
 addEventListener("pagehide",save);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});document.addEventListener("pointerdown",e=>{if(popK&&!pop.contains(e.target)&&!e.target.closest("#dock"))hidePop();if(sheet.classList.contains("open")&&!sheet.contains(e.target)&&!e.target.closest("#dock"))sheet.classList.remove("open")});
 {let sx=0,sy=0,st=0;cv.addEventListener("pointerdown",e=>{sx=e.clientX;sy=e.clientY;st=performance.now()});
  cv.addEventListener("pointerup",e=>{const dx=e.clientX-sx;if(Math.abs(dx)>80&&Math.abs(e.clientY-sy)<70&&performance.now()-st<700){const L=photo?ROOMS.concat([PHOTO]):ROOMS,i=L.findIndex(r=>r.id===S.room);buzz(10);selectRoom(L[(i+(dx<0?1:-1)+L.length)%L.length].id)}})}

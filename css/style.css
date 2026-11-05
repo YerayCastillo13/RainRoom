@@ -223,3 +223,24 @@ body:has(#sheet.open) #msg{opacity:0!important}
 /* Los iconos de "Volumen general" y "Gotas" heredaban el ancho de las etiquetas y descuadraban la columna */
 .row>span.ic{width:40px}
 .hint{margin-left:0}
+
+/* ---- Fase 6: controles rápidos, bienvenida y publicidad ---- */
+#stt{pointer-events:auto;cursor:pointer;transition:border-color .3s,opacity .9s var(--ease),transform .9s var(--ease)}
+#stt:hover{border-color:var(--strong)}
+#msg{font-size:13px;padding:14px 22px;border-color:var(--strong);animation:msgPulse 2.6s ease-in-out infinite}
+@keyframes msgPulse{50%{border-color:var(--ln);transform:translate(-50%,-50%) scale(1.03)}}
+/* Anuncio de la sala: fijo (no arrastrable), debajo de la interfaz, con la X en una barra propia separada del anuncio.
+   Va por debajo del velo, así el modo noche y el fundido de dormir lo atenúan solos. */
+#adw{position:fixed;left:50%;bottom:calc(var(--g) + 70px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(332px,calc(100% - 24px));background:var(--glass);border:1px solid var(--ln);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);animation:adIn .8s var(--ease) backwards}
+@keyframes adIn{from{opacity:0;transform:translate(-50%,12px)}}
+#adw[hidden],#adSheet[hidden]{display:none}
+.adh{display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 0 0 12px;border-bottom:1px solid var(--ln);font:500 11.5px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)}
+.adh button{width:44px;height:36px;background:transparent;border:0;border-left:1px solid var(--ln);color:var(--fg2);font-size:14px;cursor:pointer}
+.adh button:hover{color:var(--fg)}
+.adb{min-height:100px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.adb .adph{font:500 11.5px/1.4 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);text-align:center;padding:12px}
+html[data-sleep="1"] #adw,html[data-sleep="1"] #adSheet{display:none}
+/* Banner del panel de ajustes: pegado abajo, con altura reservada; los controles se desplazan por encima y nunca quedan tapados */
+#adSheet{position:sticky;bottom:0;margin:var(--s4) calc(-1 * var(--s5)) calc(-24px - env(safe-area-inset-bottom,0px));padding:0 0 env(safe-area-inset-bottom,0px);background:rgba(12,17,25,.96);border-top:1px solid var(--ln)}
+#adSheet .adb{min-height:50px}
+@media (max-height:640px){#adw{display:none}}
