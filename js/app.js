@@ -155,14 +155,16 @@ const tS=mk(0),tB=mk(1),tD=mk(2);
 ["uS","uB","uD"].forEach((n,i)=>gl.uniform1i(gl.getUniformLocation(pr,n),i));
 const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.getUniformLocation(pr,"uL"),uT=gl.getUniformLocation(pr,"uT"),uR=gl.getUniformLocation(pr,"uR"),uK=gl.getUniformLocation(pr,"uK"),uM=gl.getUniformLocation(pr,"uM"),uW=gl.getUniformLocation(pr,"uW"),uX=gl.getUniformLocation(pr,"uX"),uG=gl.getUniformLocation(pr,"uG"),uGc=gl.getUniformLocation(pr,"uGc");
 
-let W,H,photo=null,vid=null,vf=false,curAnim=null;const baseC=document.createElement("canvas");const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
+let W,H,photo=null,vid=null,vf=false,curAnim=null;const baseC=document.createElement("canvas");
+/* en pantalla vertical (móvil) se usa la imagen vertical de la sala, si la tiene, y su animación a medida */
+const imgsP={},pic=id=>W<H&&imgsP[id]?imgsP[id]:imgs[id],animCfg=()=>{const d=roomDef();return W<H&&imgsP[d.id]&&d.animP?d.animP:d.anim};const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
 const buildScene=()=>{const L=vid?960:curAnim?1280:1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
- const im=S.room==="photo"?photo:imgs[S.room];if(im){const k=Math.max(sw/im.width,sh2/im.height),pw=im.width*k,ph=im.height*k;c.drawImage(im,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
+ const im=S.room==="photo"?photo:pic(S.room);if(im){const k=Math.max(sw/im.width,sh2/im.height),pw=im.width*k,ph=im.height*k;c.drawImage(im,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
  if(vid)vidFrame();else{if(curAnim){baseC.width=sw;baseC.height=sh2;baseC.getContext("2d").drawImage(sc,0,0)}upl(0,tS,sc);upl(1,tB,bc)}};
-const animFrame=t=>{const im=imgs[S.room];if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/im.width,sh/im.height),pw=im.width*k,ph=im.height*k;
- c.globalCompositeOperation="source-over";c.globalAlpha=1;c.drawImage(baseC,0,0);ANIM.render(c,{x:(sw-pw)/2,y:(sh-ph)/2,w:pw,h:ph},t/1e3,curAnim);bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
+const animFrame=t=>{const im=pic(S.room);if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/im.width,sh/im.height),pw=im.width*k,ph=im.height*k;
+ c.globalCompositeOperation="source-over";c.globalAlpha=1;c.drawImage(baseC,0,0);ANIM.render(c,{x:(sw-pw)/2,y:(sh-ph)/2,w:pw,h:ph},t/1e3,animCfg());bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
 
 const vidFrame=()=>{if(!vid||vid.readyState<2)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/vid.videoWidth,sh/vid.videoHeight),pw=vid.videoWidth*k,ph=vid.videoHeight*k;
  c.drawImage(vid,(sw-pw)/2,(sh-ph)/2,pw,ph);bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
@@ -309,5 +311,6 @@ try{const q=new URLSearchParams(location.search),id=q.get("sala"),R=ROOMS.find(x
  if(R){const snd={};(q.get("mezcla")||"").split(",").forEach(p=>{const[k,v]=p.split(":"),n=parseFloat(v);if(SRC[k]&&n>=0)snd[k]={v:clamp(n,0,1),on:n>.02}});
   const g=parseFloat(q.get("gotas"));S.room=id;S.mix=S.mix||{};S.mix[id]={snd,int:g>=0?clamp(g,0,1):R.int,w:null};history.replaceState(null,"",location.pathname)}}catch(e){}
 resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image();im.onload=()=>{imgs[r.id]=im;delete thumbs[r.id];if(S.room===r.id)buildScene();renderRooms()};im.src=r.src}
+ if(r.srcP){const ip=new Image();ip.onload=()=>{imgsP[r.id]=ip;if(S.room===r.id)buildScene()};ip.src=r.srcP}
  if(r.video){const v=document.createElement("video");v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute("playsinline","");v.preload="auto";v.onloadeddata=()=>{vids[r.id]=v;if(S.room===r.id)useVid()};v.src=r.video}});idb("get").then(b=>{if(b)setPhoto(b)});requestAnimationFrame(frame);
 })();
