@@ -238,8 +238,8 @@ const fadeOut=s=>{const c=ensure();master.gain.cancelScheduledValues(c.currentTi
 const setWake=async on=>{try{if(on&&navigator.wakeLock&&!wlk){wlk=await navigator.wakeLock.request("screen");wlk.onrelease=()=>{wlk=null}}else if(!on&&wlk){await wlk.release();wlk=null}}catch(e){}};
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.wake&&!wlk)setWake(true)});
 const nchip={};
-const applyNight=()=>{$("#veil").classList.toggle("night",!!S.night);nchip.n.classList.toggle("on",!!S.night);nchip.w.classList.toggle("on",!!S.wake)};
-const buildN=()=>{[["n","Modo noche"],["w","Pantalla encendida"]].forEach(([k,t])=>{const b=document.createElement("button");b.className="chip";b.textContent=t;
+const applyNight=()=>{$("#veil").classList.toggle("night",!!S.night);[["n",S.night],["w",S.wake]].forEach(([k,v])=>{nchip[k].classList.toggle("on",!!v);nchip[k].setAttribute("aria-checked",!!v)})};
+const buildN=()=>{[["n","Modo noche","Atenúa la escena y ahorra batería"],["w","Pantalla encendida","Evita que el móvil se bloquee"]].forEach(([k,t,d])=>{const b=document.createElement("button");b.className="opt sw";b.setAttribute("role","switch");b.innerHTML=`<span>${t}<em>${d}</em></span><i class="tgl" aria-hidden="true"></i>`;
  b.onclick=()=>{if(k==="n")S.night=!S.night;else{S.wake=!S.wake;setWake(S.wake)}applyNight();save()};$("#nsel").appendChild(b);nchip[k]=b});applyNight()};
 const placeW=o=>{o.el.style.left=o.x*Math.max(0,W-o.el.offsetWidth)+"px";o.el.style.top=o.y*Math.max(0,H-o.el.offsetHeight-96)+"px"};
 const addW=(t,st)=>{if(wi[t]||!WIDGETS[t])return;const d=WIDGETS[t],o=wi[t]={x:st&&st.x!=null?st.x:.08,y:st&&st.y!=null?st.y:.14,cfg:Object.assign(d.cfg(),st&&st.cfg)};
@@ -296,7 +296,7 @@ const stt=$("#stt");stt.onclick=toggleAll;stt.onkeydown=e=>{if(e.key==="Enter"||
 addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||(e.target.closest&&e.target.closest("input,textarea,select,button,[role=button]")))return;const ks=Object.keys(SRC),i=+e.key-1;
  if(e.key===" "){e.preventDefault();toggleAll()}else if(i>=0&&i<ks.length)tapSound(ks[i],tg[ks[i]]);else if(e.key==="Escape")sheet.classList.remove("open");else if(e.key==="m"||e.key==="M")sheet.classList.toggle("open")});
 $("#rstRoom").onclick=()=>{buzz(10);delete S.mix[S.room];selectRoom(S.room)};
-const resize=()=>{const d=Math.min(devicePixelRatio||1,[2,1.5,1][qual]);W=innerWidth;H=innerHeight;cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
+const resize=()=>{const d=Math.min(devicePixelRatio||1,[2,1.5,1][qual]);W=Math.max(1,innerWidth);H=Math.max(1,innerHeight);cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
 M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%"};rg.onchange=save;
 // La interfaz se oculta tras unos segundos sin tocar, pero solo cuando el usuario ya ha empezado (si no, la primera visita no vería ningún control)

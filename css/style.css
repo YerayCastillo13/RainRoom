@@ -244,3 +244,76 @@ html[data-sleep="1"] #adw,html[data-sleep="1"] #adSheet{display:none}
 #adSheet{position:sticky;bottom:0;margin:var(--s4) calc(-1 * var(--s5)) calc(-24px - env(safe-area-inset-bottom,0px));padding:0 0 env(safe-area-inset-bottom,0px);background:rgba(12,17,25,.96);border-top:1px solid var(--ln)}
 #adSheet .adb{min-height:50px}
 @media (max-height:640px){#adw{display:none}}
+
+/* ---- Fase 7: UX móvil y pulido ---- */
+/* Hoja: altura fija (no salta al cambiar de pestaña), cabecera fija y cada panel con su propio scroll */
+#sheet{display:flex;flex-direction:column;overflow:hidden;height:min(72vh,640px);height:min(72dvh,640px);max-height:none;padding:0 var(--s5);background:rgba(12,17,25,.82)}
+#shHead{position:relative;top:auto;flex:0 0 auto;margin:0 calc(-1 * var(--s5));padding:12px var(--s5) 0;background:transparent}
+#shHead .x{top:6px;right:8px}
+#tabs{margin:12px 44px 0 0}
+#tabs button{height:48px}
+.pn.on{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:0 calc(-1 * var(--s5));padding:16px var(--s5) calc(28px + env(safe-area-inset-bottom,0px));scrollbar-width:thin;scrollbar-color:var(--ln) transparent}
+.pn{min-height:0}
+.pn::-webkit-scrollbar{width:6px}.pn::-webkit-scrollbar-thumb{background:var(--ln)}
+#adSheet{position:static;flex:0 0 auto;margin:0 calc(-1 * var(--s5));padding-bottom:env(safe-area-inset-bottom,0px)}
+#sheet h3:first-of-type{border-top:0;padding-top:0;margin-top:var(--s1)}
+
+/* Salas: rejilla que se ve entera, sin scroll lateral escondido */
+#rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;overflow:visible;padding:0}
+.card{flex:none;width:100%;opacity:.82}
+.card canvas{width:100%;height:auto;aspect-ratio:4/5}
+.card.add{height:auto;aspect-ratio:4/5}
+@media (hover:hover){.card:hover{opacity:1}.card:hover canvas{border-color:var(--strong)}.card.on:hover canvas{border-color:var(--ac)}}
+.card.on::after{content:"Ahora";position:absolute;top:8px;left:8px;padding:5px 7px;font:500 10px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;background:var(--ac);color:#0c1119}
+
+/* Mezclas rápidas: rejilla regular en vez de chips que se descolocan */
+#pres{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+#pres .chip{padding:0 6px;width:100%}
+@media (max-width:480px){#pres{grid-template-columns:repeat(2,1fr)}}
+#vrow{border-bottom:1px solid var(--ln);padding-bottom:12px;margin-bottom:4px}
+.row{padding:8px 0}
+.row .rc input{height:36px}
+input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-8px}
+input[type=range]::-moz-range-thumb{width:18px;height:18px}
+.ic{width:44px;height:44px}.row>span.ic{width:44px}
+.hint{margin:0 0 14px;font-size:12.5px;color:var(--mu)}
+#grow+.hint{margin:-6px 0 12px 58px}
+
+/* Ajustes: filas de lista con interruptores, en vez de chips que no caben */
+.list{display:flex;flex-direction:column;border-top:1px solid var(--ln)}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:56px;padding:10px 2px;background:none;border:0;border-bottom:1px solid var(--ln);color:var(--fg);font:400 15px/1.3 var(--f-ui);text-align:left;text-decoration:none;cursor:pointer;transition:background .2s}
+.opt span{display:flex;flex-direction:column;gap:3px}
+.opt em{font-style:normal;font-size:12.5px;color:var(--mu)}
+.opt:not(.sw)::after{content:"→";font-family:var(--f-mono);color:var(--mu);transition:transform .25s var(--ease)}
+@media (hover:hover){.opt:hover{background:rgba(236,234,229,.04)}.opt:not(.sw):hover::after{transform:translateX(3px);color:var(--fg)}}
+.opt:active{background:rgba(236,234,229,.07)}
+#fabX{position:static;display:none}
+.tgl{position:relative;flex:0 0 auto;width:44px;height:24px;border:1px solid var(--strong);transition:background .25s,border-color .25s}
+.tgl::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--fg2);transition:transform .3s var(--ease),background .25s}
+.opt.on .tgl{background:var(--ac);border-color:var(--ac)}
+.opt.on .tgl::after{transform:translateX(20px);background:#0c1119}
+#sheet h3{margin-top:28px}
+.legal{display:flex;flex-wrap:wrap;gap:4px 20px;margin:28px 0 0;font:500 11px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase}
+.legal a{color:var(--mu);text-decoration:none;padding:10px 0}
+.legal a:hover{color:var(--fg)}
+
+/* Mensaje de bienvenida: legible, en minúsculas, y en móvil encima del dock (no en mitad de la escena) */
+#msg{width:max-content;max-width:min(360px,calc(100% - 32px));text-align:center;font:500 13.5px/1.45 var(--f-ui);letter-spacing:.01em;text-transform:none;padding:12px 18px;color:var(--fg)}
+@media (max-width:600px){
+ #msg{top:auto;bottom:calc(var(--g) + 76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);animation-name:msgPulseM}
+}
+@keyframes msgPulseM{50%{border-color:var(--ln);transform:translateX(-50%) scale(1.03)}}
+
+/* Volumen rápido */
+#pop{height:60px;padding:0 16px}
+#pop b{min-width:72px}
+
+/* Widgets: la X se ve y se toca bien */
+.wd .wx{top:4px;right:4px;width:40px;height:40px;opacity:.7}
+@media (hover:none){.wd .wx{opacity:.85}}
+
+/* Estado y marca: área táctil cómoda */
+#stt{min-height:36px;padding:8px 12px}
+#brand small{display:inline-flex;align-items:center;gap:4px;padding:8px 0}
+.snd{width:52px;height:52px}
+@media (max-width:360px){.snd{width:46px;height:48px}}
