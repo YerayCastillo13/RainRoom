@@ -103,7 +103,7 @@ const buildUI=()=>{
 const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
  for(const r of photo?ROOMS.concat([PHOTO]):ROOMS){const b=document.createElement("button");b.className="card"+(r.id===S.room?" on":"");
   let c=thumbs[r.id];if(!c){c=thumbs[r.id]=document.createElement("canvas");c.width=160;c.height=200;const x=c.getContext("2d");
-   const im=r.id==="photo"?photo:imgs[r.id];if(im)fitImg(x,im,160,200,r.crop,r.fy,r.fx);else r.draw(x,160,200)}
+   const im=r.id==="photo"?photo:imgs[r.id];if(im)fitImg(x,im,160,200,r.crop,r.ay,r.ax);else r.draw(x,160,200)}
   const cc=document.createElement("canvas");cc.width=160;cc.height=200;cc.getContext("2d").drawImage(c,0,0);
   const sp=document.createElement("span");sp.textContent=r.name;b.append(cc,sp);b.onclick=()=>{if(r.id!==S.room){buzz(10);selectRoom(r.id)}};box.appendChild(b)}
  const a=document.createElement("button");a.className="card add";a.setAttribute("aria-label","Usar tu propia foto");a.innerHTML="<i>+</i><span>Tu foto</span>";a.onclick=()=>$("#file").click();box.appendChild(a)};
@@ -161,18 +161,19 @@ const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.
 let W,H,photo=null,vid=null,vf=false,curAnim=null;const baseC=document.createElement("canvas");
 /* en pantalla vertical (móvil) se usa la imagen vertical de la sala, si la tiene, y su animación a medida */
 const imgsP={},pic=id=>W<H&&imgsP[id]?imgsP[id]:imgs[id],animCfg=()=>{const d=roomDef();return W<H&&imgsP[d.id]&&d.animP?d.animP:d.anim};const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
-/* Recorte de la foto (crop = [x,y,w,h] en píxeles de la imagen; fy = dónde se centra en vertical, 0 arriba · 1 abajo).
+/* Recorte de la foto (crop = [x,y,w,h] en píxeles de la imagen; ax/ay = encuadre horizontal/vertical, 0 izquierda/arriba · 1 derecha/abajo).
    Sirve para quedarse solo con el cristal y que no se vea el marco de la ventana. Devuelve dónde quedaría la imagen entera, que es lo que usa la animación. */
-const fitRect=(im,cw,ch,cr,fy,fx)=>{const[sx,sy,sw,sh]=cr||[0,0,im.width,im.height],k=Math.max(cw/sw,ch/sh),pw=sw*k,ph=sh*k,dx=(cw-pw)*(fx==null?.5:fx),dy=(ch-ph)*(fy==null?.5:fy);
+const num=(v,d)=>typeof v==="number"&&isFinite(v)?v:d;
+const fitRect=(im,cw,ch,cr,ay,ax)=>{const[sx,sy,sw,sh]=cr||[0,0,im.width,im.height],k=Math.max(cw/sw,ch/sh),pw=sw*k,ph=sh*k,dx=(cw-pw)*num(ax,.5),dy=(ch-ph)*num(ay,.5);
  return{sx,sy,sw,sh,dx,dy,pw,ph,full:{x:dx-sx*k,y:dy-sy*k,w:im.width*k,h:im.height*k}}};
-const fitImg=(c,im,cw,ch,cr,fy,fx)=>{const r=fitRect(im,cw,ch,cr,fy,fx);c.drawImage(im,r.sx,r.sy,r.sw,r.sh,r.dx,r.dy,r.pw,r.ph);return r.full};
-const cropOf=()=>{const d=roomDef();if(S.room==="photo")return[];return W<H&&imgsP[d.id]?[d.cropP,d.fyP,d.fxP]:[d.crop,d.fy,d.fx]};
+const fitImg=(c,im,cw,ch,cr,ay,ax)=>{const r=fitRect(im,cw,ch,cr,ay,ax);c.drawImage(im,r.sx,r.sy,r.sw,r.sh,r.dx,r.dy,r.pw,r.ph);return r.full};
+const cropOf=()=>{const d=roomDef();if(S.room==="photo")return[];return W<H&&imgsP[d.id]?[d.cropP,d.ayP,d.axP]:[d.crop,d.ay,d.ax]};
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
 const buildScene=()=>{const L=vid?960:curAnim?1280:1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
- const im=S.room==="photo"?photo:pic(S.room);if(im){const[cr,fy,fx]=cropOf();fitImg(c,im,sw,sh2,cr,fy,fx)}else roomDef().draw(c,sw,sh2);
+ const im=S.room==="photo"?photo:pic(S.room);if(im){const[cr,ay,ax]=cropOf();fitImg(c,im,sw,sh2,cr,ay,ax)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
  if(vid)vidFrame();else{if(curAnim){baseC.width=sw;baseC.height=sh2;baseC.getContext("2d").drawImage(sc,0,0)}upl(0,tS,sc);upl(1,tB,bc)}};
-const animFrame=t=>{const im=pic(S.room);if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),[cr,fy,fx]=cropOf(),R=fitRect(im,sc.width,sc.height,cr,fy,fx).full;
+const animFrame=t=>{const im=pic(S.room);if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),[cr,ay,ax]=cropOf(),R=fitRect(im,sc.width,sc.height,cr,ay,ax).full;
  c.globalCompositeOperation="source-over";c.globalAlpha=1;c.drawImage(baseC,0,0);ANIM.render(c,R,t/1e3,animCfg());bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
 
 const vidFrame=()=>{if(!vid||vid.readyState<2)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/vid.videoWidth,sh/vid.videoHeight),pw=vid.videoWidth*k,ph=vid.videoHeight*k;

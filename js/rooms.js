@@ -1,5 +1,5 @@
 /* RainRoom · salas. Para añadir una: crea su función de dibujo y regístrala en ROOMS.
-   video = bucle opcional (mp4, 720p, sin audio); src = foto opcional en assets/scenes (si existe, sustituye al dibujo); crop/cropP = recorte [x,y,w,h] de la foto horizontal/vertical para quedarse solo con el cristal (fy/fyP = encuadre vertical, 0 arriba · 1 abajo; fx/fxP = horizontal, 0 izquierda · 1 derecha); w = widgets iniciales; fx = efectos vivos (mist: niebla que se desplaza; glow: luz cálida que parpadea); mix = sonidos que se activan al entrar (v = volumen); int = intensidad de las gotas. */
+   video = bucle opcional (mp4, 720p, sin audio); src = foto opcional en assets/scenes (si existe, sustituye al dibujo); crop/cropP = recorte [x,y,w,h] de la foto horizontal/vertical para quedarse solo con el cristal (ay/ayP = encuadre vertical, 0 arriba · 1 abajo; ax/axP = horizontal, 0 izquierda · 1 derecha); w = widgets iniciales; fx = efectos vivos (mist: niebla que se desplaza; glow: luz cálida que parpadea); mix = sonidos que se activan al entrar (v = volumen); int = intensidad de las gotas. */
 const rand=(a,b)=>a+Math.random()*(b-a);
 const drawCity=(c,w,h)=>{const u=w/400;let g=c.createLinearGradient(0,0,0,h);
  g.addColorStop(0,"#071120");g.addColorStop(.55,"#13283e");g.addColorStop(1,"#0a141d");c.fillStyle=g;c.fillRect(0,0,w,h);
@@ -41,7 +41,7 @@ const CITY_A={P:48,W:1280,H:720,seed:7,
   lights:[{rects:[[715,50,790,325],[530,160,595,300],[300,165,420,300],[865,140,915,290],[1075,180,1185,300],[215,300,300,380]],n:34,c:[255,206,130],s:5,a:.5,k:[2,6]},
           {rects:[[830,380,950,470]],n:12,c:[255,190,110],s:9,a:.35,k:[4,8]}]};
 const ROOMS=[
- {id:"city",name:"Ciudad de noche",src:"assets/scenes/city.jpg",srcP:"assets/scenes/city-p.jpg",crop:[474,0,486,612],fy:.8,cropP:[0,0,762,1290],fxP:1,video:"assets/scenes/city.mp4",w:{clock:{}},draw:drawCity,anim:CITY_A,animP:mvAnim(CITY_A,-580,2,810,1440),fx:{mist:.25},int:.7,mix:{rain:{v:.7,on:true},thunder:{v:.3,on:true},traffic:{v:.35,on:true}}},
+ {id:"city",name:"Ciudad de noche",src:"assets/scenes/city.jpg",srcP:"assets/scenes/city-p.jpg",crop:[474,0,486,612],ay:.8,cropP:[0,0,762,1290],axP:1,video:"assets/scenes/city.mp4",w:{clock:{}},draw:drawCity,anim:CITY_A,animP:mvAnim(CITY_A,-580,2,810,1440),fx:{mist:.25},int:.7,mix:{rain:{v:.7,on:true},thunder:{v:.3,on:true},traffic:{v:.35,on:true}}},
  {id:"forest",name:"Bosque",src:"assets/scenes/forest.jpg",video:"assets/scenes/forest.mp4",w:{},draw:drawForest,fx:{mist:.55},int:.55,mix:{rain:{v:.6,on:true},wind:{v:.3,on:true},thunder:{v:.15,on:true}}},
  {id:"lounge",name:"Salón acogedor",src:"assets/scenes/lounge.jpg",video:"assets/scenes/lounge.mp4",w:{clock:{}},draw:drawLounge,fx:{mist:.1,glow:{x:.15,y:.88,r:.35,s:.5,c:[1,.62,.3]}},int:.5,mix:{rain:{v:.5,on:true},fire:{v:.5,on:true}}}];
 const PHOTO={id:"photo",name:"Mi foto",fx:{mist:.15},w:{clock:{}},draw:(c,w,h)=>drawCity(c,w,h),int:.7,mix:{rain:{v:.7,on:true},thunder:{v:.25,on:true}}};
