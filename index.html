@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#060a10">
+<meta name="theme-color" content="#101317">
 <title>RainRoom · Sonidos ambientales para dormir, estudiar y relajarte</title>
 <meta name="description" content="Crea tu propio espacio: elige un ambiente, mezcla sonidos como lluvia, viento o fuego y añade widgets para dormir, estudiar o desconectar. Gratis y sin registro.">
 <link rel="canonical" href="https://rainrooms.vercel.app/">
@@ -35,7 +35,7 @@
 <aside id="adw" hidden aria-label="Publicidad"><div class="adh"><span>Publicidad</span><button id="adx" aria-label="Cerrar anuncio">&#10005;</button></div><div class="adb" id="adSlot"></div></aside>
 <div id="veil"></div>
 <div id="ui">
- <button id="brand" aria-label="Abrir salas"><span class="mast" aria-hidden="true"><span>Rain</span><span>Room.</span></span><small><i id="rn" style="font-style:normal"></i> &#8964;</small></button>
+ <button id="brand" aria-label="Abrir salas"><span class="mast" aria-hidden="true"><span>Rain</span><span>Room.</span></span><small><i id="rn" style="font-style:normal"></i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></small></button>
  <div id="stt" role="button" tabindex="0" aria-label="Pausar o reanudar todos los sonidos" title="Pausar o reanudar"><i></i><span></span></div>
  <div id="pop" role="group" aria-label="Volumen"><b></b><input type="range" min="0" max="1" step=".01" aria-label="Volumen"><output></output></div>
  <nav id="dock" aria-label="Sonidos"></nav>
@@ -43,7 +43,7 @@
   <div id="shHead"><div class="grip"></div><button class="x" id="shClose" aria-label="Cerrar">&#10005;</button>
    <div id="tabs" role="tablist"><button role="tab">Salas</button><button role="tab">Sonidos</button><button role="tab">Widgets</button><button role="tab">Ajustes</button><i id="tind"></i></div></div>
   <div class="pn"><div id="rooms"></div></div>
-  <div class="pn"><div class="chips" id="pres"></div><div class="row" id="vrow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10zM16.5 9a4 4 0 0 1 0 6"/></svg></span><div class="rc"><div class="rt"><span>Volumen general</span><output id="mvv"></output></div><input type="range" id="mv" min="0" max="1" step=".01" aria-label="Volumen general"></div></div><div class="row" id="grow"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 4c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg></span><div class="rc"><div class="rt"><span>Gotas</span><output id="intv"></output></div><input type="range" id="int" min="0" max="1" step=".05" aria-label="Intensidad de las gotas"></div></div>
+  <div class="pn"><div class="chips" id="pres"></div><div class="row" id="vrow"><button class="ic" id="mvB" aria-label="Silenciar o activar el volumen general"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10zM16.5 9a4 4 0 0 1 0 6"/></svg></button><div class="rc"><div class="rt"><span>Volumen general</span><output id="mvv"></output></div><input type="range" id="mv" min="0" max="1" step=".01" aria-label="Volumen general"></div></div><div class="row" id="grow"><button class="ic" id="intB" aria-label="Quitar o recuperar las gotas"><svg viewBox="0 0 24 24"><path d="M12 4c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg></button><div class="rc"><div class="rt"><span>Gotas</span><output id="intv"></output></div><input type="range" id="int" min="0" max="1" step=".05" aria-label="Intensidad de las gotas"></div></div>
    <p class="hint">Llévalo a 0 para una sala sin lluvia.</p><div id="mix"></div></div>
   <div class="pn"><p class="hint">Toca para añadir o quitar. Arrástralos por la pantalla y ciérralos con la ×.</p><div id="wsel" class="chips"></div></div>
   <div class="pn"><h3>Noche</h3><div id="nsel" class="list"></div>

@@ -71,8 +71,11 @@ ps.oninput=()=>{if(!popK)return;const v=+ps.value;M.vol(popK,v);M.set(popK,v>.02
 const tapSound=(k,b)=>{const c=M.ch[k],on=!c.on;if(on&&c.v<.05)M.vol(k,SRC[k].v);M.set(k,on);buzz(8);syncUI();save();if(on)showPop(k,b);else hidePop()};
 const setTab=i=>{document.querySelectorAll(".pn").forEach((p,j)=>p.classList.toggle("on",i===j));document.querySelectorAll("#tabs button").forEach((b,j)=>b.setAttribute("aria-selected",i===j));$("#tind").style.transform=`translateX(${i*100}%)`;S.tab=i};
 const buildTabs=()=>{document.querySelectorAll("#tabs button").forEach((b,i)=>b.onclick=()=>setTab(i));$("#brand").onclick=()=>{setTab(0);sheet.classList.add("open")};setTab(S.tab||0);
- const mv=$("#mv"),sv=()=>{$("#mvv").textContent=Math.round(mv.value*100)+"%";fillR(mv)};mv.value=S.vol==null?1:S.vol;sv();
- mv.oninput=()=>{S.vol=+mv.value;if(uv)uv.gain.setTargetAtTime(S.vol,ctx.currentTime,.05);sv()};mv.onchange=save;
+ const mv=$("#mv"),sv=()=>{$("#mvv").textContent=Math.round(mv.value*100)+"%";fillR(mv);$("#vrow").classList.toggle("off",mv.value<.01)};mv.value=S.vol==null?1:S.vol;sv();
+ const setVol=v=>{S.vol=v;if(uv)uv.gain.setTargetAtTime(S.vol,ctx.currentTime,.05);sv()};
+ mv.oninput=()=>setVol(+mv.value);mv.onchange=()=>{if(S.vol>=.01)S.volPrev=S.vol;save()};
+ // Icono = silenciar / volver al volumen que había
+ $("#mvB").onclick=()=>{buzz(8);const cur=S.vol==null?1:S.vol;if(cur>=.01){S.volPrev=cur;mv.value=0}else mv.value=S.volPrev>=.01?S.volPrev:1;setVol(+mv.value);save()};
  const PRESETS=[{n:"Suave",m:{rain:.4,wind:.12},i:.45},{n:"Tormenta",m:{rain:.85,thunder:.6,wind:.35},i:.95},{n:"Concentración",m:{rain:.45,traffic:.18},i:.5},{n:"Dormir",m:{rain:.35,fire:.2},i:.35}];
  PRESETS.forEach(p=>{const b=document.createElement("button");b.className="chip";b.textContent=p.n;b.onclick=()=>{buzz(8);for(const k in SRC){const v=p.m[k];M.vol(k,v||M.ch[k].v);M.set(k,!!v)}S.int=p.i;syncUI();save()};$("#pres").appendChild(b)})};
 const buildUI=()=>{
@@ -100,13 +103,13 @@ const buildUI=()=>{
 const renderRooms=()=>{const box=$("#rooms");box.innerHTML="";
  for(const r of photo?ROOMS.concat([PHOTO]):ROOMS){const b=document.createElement("button");b.className="card"+(r.id===S.room?" on":"");
   let c=thumbs[r.id];if(!c){c=thumbs[r.id]=document.createElement("canvas");c.width=160;c.height=200;const x=c.getContext("2d");
-   const im=r.id==="photo"?photo:imgs[r.id];if(im){const k=Math.max(160/im.width,200/im.height);x.drawImage(im,(160-im.width*k)/2,(200-im.height*k)/2,im.width*k,im.height*k)}else r.draw(x,160,200)}
+   const im=r.id==="photo"?photo:imgs[r.id];if(im)fitImg(x,im,160,200,r.crop,r.fy,r.fx);else r.draw(x,160,200)}
   const cc=document.createElement("canvas");cc.width=160;cc.height=200;cc.getContext("2d").drawImage(c,0,0);
   const sp=document.createElement("span");sp.textContent=r.name;b.append(cc,sp);b.onclick=()=>{if(r.id!==S.room){buzz(10);selectRoom(r.id)}};box.appendChild(b)}
  const a=document.createElement("button");a.className="card add";a.setAttribute("aria-label","Usar tu propia foto");a.innerHTML="<i>+</i><span>Tu foto</span>";a.onclick=()=>$("#file").click();box.appendChild(a)};
 const syncUI=light=>{for(const k in SRC){const c=M.ch[k],v=c.on?c.v:0;tg[k].classList.toggle("on",c.on);tg[k].style.setProperty("--v",v);rows[k].classList.toggle("off",!c.on);rows[k].querySelector("output").textContent=Math.round(v*100)+"%";
   if(light!==true||document.activeElement!==mixEl[k]){mixEl[k].value=v;fillR(mixEl[k])}}
- if(light!==true){$("#int").value=S.int;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%";$("#rn").textContent=roomDef().name;renderRooms();syncW();fillR($("#int"))}};
+ if(light!==true){$("#int").value=S.int;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%";$("#grow").classList.toggle("off",S.int<.05);$("#rn").textContent=roomDef().name;renderRooms();syncW();fillR($("#int"))}};
 const selectRoom=(id,first)=>{const go=()=>{S.room=id;const d=roomDef(),m=S.mix[id];curFx=d.fx||{};curAnim=d.anim||null;msMeta();S.int=m?m.int:d.int;M.apply(m?m.snd:d.mix);vid=vids[id]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene();sizeDrops();loadW(m&&m.w?m.w:d.w||{});syncUI();save()};
  if(first)return go();$("#veil").classList.add("on");setTimeout(()=>{go();$("#veil").classList.remove("on")},380)};
 
@@ -158,13 +161,19 @@ const uP=gl.getUniformLocation(pr,"uP"),uF=gl.getUniformLocation(pr,"uF"),uL=gl.
 let W,H,photo=null,vid=null,vf=false,curAnim=null;const baseC=document.createElement("canvas");
 /* en pantalla vertical (móvil) se usa la imagen vertical de la sala, si la tiene, y su animación a medida */
 const imgsP={},pic=id=>W<H&&imgsP[id]?imgsP[id]:imgs[id],animCfg=()=>{const d=roomDef();return W<H&&imgsP[d.id]&&d.animP?d.animP:d.anim};const vids={};const useVid=()=>{vid=vids[S.room]||null;for(const k in vids)if(vids[k]!==vid)vids[k].pause();if(vid)vid.play().catch(()=>{});buildScene()};
+/* Recorte de la foto (crop = [x,y,w,h] en píxeles de la imagen; fy = dónde se centra en vertical, 0 arriba · 1 abajo).
+   Sirve para quedarse solo con el cristal y que no se vea el marco de la ventana. Devuelve dónde quedaría la imagen entera, que es lo que usa la animación. */
+const fitRect=(im,cw,ch,cr,fy,fx)=>{const[sx,sy,sw,sh]=cr||[0,0,im.width,im.height],k=Math.max(cw/sw,ch/sh),pw=sw*k,ph=sh*k,dx=(cw-pw)*(fx==null?.5:fx),dy=(ch-ph)*(fy==null?.5:fy);
+ return{sx,sy,sw,sh,dx,dy,pw,ph,full:{x:dx-sx*k,y:dy-sy*k,w:im.width*k,h:im.height*k}}};
+const fitImg=(c,im,cw,ch,cr,fy,fx)=>{const r=fitRect(im,cw,ch,cr,fy,fx);c.drawImage(im,r.sx,r.sy,r.sw,r.sh,r.dx,r.dy,r.pw,r.ph);return r.full};
+const cropOf=()=>{const d=roomDef();if(S.room==="photo")return[];return W<H&&imgsP[d.id]?[d.cropP,d.fyP,d.fxP]:[d.crop,d.fy,d.fx]};
 const sc=document.createElement("canvas"),bc=document.createElement("canvas");
 const buildScene=()=>{const L=vid?960:curAnim?1280:1536,sw=W>=H?L:Math.round(L*W/H),sh2=W>=H?Math.round(L*H/W):L;sc.width=sw;sc.height=sh2;const c=sc.getContext("2d");
- const im=S.room==="photo"?photo:pic(S.room);if(im){const k=Math.max(sw/im.width,sh2/im.height),pw=im.width*k,ph=im.height*k;c.drawImage(im,(sw-pw)/2,(sh2-ph)/2,pw,ph)}else roomDef().draw(c,sw,sh2);
+ const im=S.room==="photo"?photo:pic(S.room);if(im){const[cr,fy,fx]=cropOf();fitImg(c,im,sw,sh2,cr,fy,fx)}else roomDef().draw(c,sw,sh2);
  bc.width=Math.max(8,Math.round(sw/14));bc.height=Math.max(8,Math.round(sh2/14));const b=bc.getContext("2d");b.imageSmoothingQuality="high";b.drawImage(sc,0,0,bc.width,bc.height);
  if(vid)vidFrame();else{if(curAnim){baseC.width=sw;baseC.height=sh2;baseC.getContext("2d").drawImage(sc,0,0)}upl(0,tS,sc);upl(1,tB,bc)}};
-const animFrame=t=>{const im=pic(S.room);if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/im.width,sh/im.height),pw=im.width*k,ph=im.height*k;
- c.globalCompositeOperation="source-over";c.globalAlpha=1;c.drawImage(baseC,0,0);ANIM.render(c,{x:(sw-pw)/2,y:(sh-ph)/2,w:pw,h:ph},t/1e3,animCfg());bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
+const animFrame=t=>{const im=pic(S.room);if(!curAnim||!im||!baseC.width)return;const c=sc.getContext("2d"),[cr,fy,fx]=cropOf(),R=fitRect(im,sc.width,sc.height,cr,fy,fx).full;
+ c.globalCompositeOperation="source-over";c.globalAlpha=1;c.drawImage(baseC,0,0);ANIM.render(c,R,t/1e3,animCfg());bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
 
 const vidFrame=()=>{if(!vid||vid.readyState<2)return;const c=sc.getContext("2d"),sw=sc.width,sh=sc.height,k=Math.max(sw/vid.videoWidth,sh/vid.videoHeight),pw=vid.videoWidth*k,ph=vid.videoHeight*k;
  c.drawImage(vid,(sw-pw)/2,(sh-ph)/2,pw,ph);bc.getContext("2d").drawImage(sc,0,0,bc.width,bc.height);upl(0,tS,sc);upl(1,tB,bc)};
@@ -241,7 +250,9 @@ const nchip={};
 const applyNight=()=>{$("#veil").classList.toggle("night",!!S.night);[["n",S.night],["w",S.wake]].forEach(([k,v])=>{nchip[k].classList.toggle("on",!!v);nchip[k].setAttribute("aria-checked",!!v)})};
 const buildN=()=>{[["n","Modo noche","Atenúa la escena y ahorra batería"],["w","Pantalla encendida","Evita que el móvil se bloquee"]].forEach(([k,t,d])=>{const b=document.createElement("button");b.className="opt sw";b.setAttribute("role","switch");b.innerHTML=`<span>${t}<em>${d}</em></span><i class="tgl" aria-hidden="true"></i>`;
  b.onclick=()=>{if(k==="n")S.night=!S.night;else{S.wake=!S.wake;setWake(S.wake)}applyNight();save()};$("#nsel").appendChild(b);nchip[k]=b});applyNight()};
-const placeW=o=>{o.el.style.left=o.x*Math.max(0,W-o.el.offsetWidth)+"px";o.el.style.top=o.y*Math.max(0,H-o.el.offsetHeight-96)+"px"};
+// Si al cambiar el tamaño (girar el móvil, redimensionar) el widget cae encima del título, se baja justo debajo; la posición guardada no cambia
+const placeW=o=>{const w=o.el.offsetWidth,h=o.el.offsetHeight,x=o.x*Math.max(0,W-w);let y=o.y*Math.max(0,H-h-96);const bb=$("#brand").getBoundingClientRect();
+ if(x<bb.right&&x+w>bb.left&&y<bb.bottom&&y+h>bb.top)y=Math.min(bb.bottom+16,Math.max(0,H-h-96));o.el.style.left=x+"px";o.el.style.top=y+"px"};
 const addW=(t,st)=>{if(wi[t]||!WIDGETS[t])return;const d=WIDGETS[t],o=wi[t]={x:st&&st.x!=null?st.x:.08,y:st&&st.y!=null?st.y:.14,cfg:Object.assign(d.cfg(),st&&st.cfg)};
  const e=o.el=document.createElement("section");e.className="wd";e.setAttribute("aria-label",d.name);wl.appendChild(e);o.un=d.mount(e,o.cfg,{save,chime,fadeOut,sleepArm,sleepCancel,sleepEnd:()=>sleepEnd})||(()=>{});
   // Posición por defecto: bajo el título y alineada con él, escalonada para que los widgets no se tapen entre sí
@@ -298,7 +309,9 @@ addEventListener("keydown",e=>{if(e.ctrlKey||e.metaKey||e.altKey||(e.target.clos
 $("#rstRoom").onclick=()=>{buzz(10);delete S.mix[S.room];selectRoom(S.room)};
 const resize=()=>{const d=Math.min(devicePixelRatio||1,[2,1.5,1][qual]);W=Math.max(1,innerWidth);H=Math.max(1,innerHeight);cv.width=Math.round(W*d);cv.height=Math.round(H*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(uR,cv.width,cv.height);buildScene();sizeDrops()};
 addEventListener("resize",()=>{resize();for(const t in wi)placeW(wi[t])});
-M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%"};rg.onchange=save;
+M.init();buildUI();buildW();buildN();buildTabs();const rg=$("#int");rg.oninput=()=>{S.int=+rg.value;$("#intv").textContent=S.int<.05?"Sin lluvia":Math.round(S.int*100)+"%";$("#grow").classList.toggle("off",S.int<.05)};rg.onchange=()=>{if(S.int>=.05)S.intPrev=S.int;save()};
+// Icono de gotas = quitar la lluvia del cristal / volver a la intensidad que había
+$("#intB").onclick=()=>{buzz(8);if(S.int>=.05){S.intPrev=S.int;S.int=0}else S.int=S.intPrev>=.05?S.intPrev:roomDef().int;syncUI();save()};
 // La interfaz se oculta tras unos segundos sin tocar, pero solo cuando el usuario ya ha empezado (si no, la primera visita no vería ningún control)
 let idle,started=false;const wake=()=>{if(!sleepEnd)delete document.documentElement.dataset.sleep;$("#ui").classList.remove("h");$("#veil").classList.remove("sl");clearTimeout(idle);idle=setTimeout(()=>{if(started&&!sheet.classList.contains("open"))$("#ui").classList.add("h")},7000)};
 addEventListener("pointerdown",wake);addEventListener("pointermove",wake);wake();
