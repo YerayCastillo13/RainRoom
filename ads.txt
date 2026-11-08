@@ -1,0 +1,2 @@
+# Pega aquí tu línea cuando AdSense te dé el ID de editor (se genera con tools/configurar.mjs):
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

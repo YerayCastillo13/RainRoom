@@ -7,7 +7,7 @@ const save=()=>{S.mix=S.mix||{};S.mix[S.room]={snd:M.state(),int:S.int,w:stateW(
 /* ---------- AUDIO ---------- */
 let ctx,master,rainBuf=null,boomFn=null,uv=null;
 const ensure=()=>{if(!ctx){ctx=new(window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.9;uv=ctx.createGain();uv.gain.value=S.vol==null?1:S.vol;const cp=ctx.createDynamicsCompressor();cp.threshold.value=-14;cp.ratio.value=4;cp.attack.value=.01;cp.release.value=.3;master.connect(uv);uv.connect(cp);cp.connect(ctx.destination)}if(ctx.state==="suspended")ctx.resume();return ctx};
-const bufs={};let rainP;
+const bufs={};let rainP,TH=[];
 const noise=c=>{const n=c.sampleRate*5,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);let l=0;for(let i=0;i<n;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l*3.5}const s=c.createBufferSource();s.buffer=b;s.loop=true;return s};
 const wander=(c,p,base,dep,rate)=>{let a=true,t;const f=()=>{if(!a)return;p.setTargetAtTime(base+rand(-dep,dep),c.currentTime,rate);t=setTimeout(f,rand(400,1800))};f();return()=>{a=false;clearTimeout(t)}};
 // Bucle sin cortes: cada pasada se funde con la siguiente (potencia constante)
@@ -23,13 +23,22 @@ const loopSample=(c,buf,out)=>{const F=Math.min(1.6,buf.duration/3),N=64,up=new 
 const SRC={
  rain:{l:"Lluvia",v:.7,f:"assets/audio/rain.mp3",i:'<path d="M7 15a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 17 15"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=900;n.connect(f).connect(o);n.start();return()=>{try{n.stop()}catch(e){}}}},
- thunder:{l:"Trueno",v:.3,i:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
-  build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=130;g.gain.value=0;n.connect(f).connect(g).connect(o);n.start();const boom=d=>{const w=c.currentTime+d;g.gain.cancelScheduledValues(c.currentTime);g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(rand(.5,1),w+.12);g.gain.exponentialRampToValueAtTime(1e-4,w+rand(2.5,5.5))};boomFn=boom;return()=>{boomFn=null;try{n.stop()}catch(e){}}}},
+ thunder:{l:"Trueno",v:.5,f:"assets/audio/thunder.mp3",shot:true,i:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  /* Truenos reales: thunder.mp3 junta 14 truenos sueltos y thunder.json dice dónde empieza cada uno [inicio, duración].
+     Cada disparo elige uno distinto al anterior; cuanto más tarda en llegar tras el relámpago (más lejos), más suave y más sordo.
+     Si el archivo no carga, se usa el trueno sintético de abajo. */
+  build(c,o){if(bufs.thunder&&TH.length){let last=-1;const live=new Set();
+   boomFn=d=>{let i;do{i=Math.floor(Math.random()*TH.length)}while(i===last&&TH.length>1);last=i;const [st,du]=TH[i],s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(),far=clamp((d-.8)/2.2,0,1);
+    s.buffer=bufs.thunder;f.type="lowpass";f.frequency.value=7000-far*5200;g.gain.value=rand(.65,1)*(1-far*.4);s.playbackRate.value=rand(.94,1.06);
+    let out=g;if(c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=rand(-.6,.6);g.connect(p);out=p}
+    s.connect(f).connect(g);out.connect(o);const w=c.currentTime+d;s.start(w,st,du);live.add(s);s.onended=()=>{live.delete(s);try{out.disconnect()}catch(e){}}};
+   return()=>{boomFn=null;live.forEach(s=>{try{s.stop()}catch(e){}})}}
+   const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=130;g.gain.value=0;n.connect(f).connect(g).connect(o);n.start();const boom=d=>{const w=c.currentTime+d;g.gain.cancelScheduledValues(c.currentTime);g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(rand(.5,1),w+.12);g.gain.exponentialRampToValueAtTime(1e-4,w+rand(2.5,5.5))};boomFn=boom;return()=>{boomFn=null;try{n.stop()}catch(e){}}}},
  wind:{l:"Viento",v:.2,f:"assets/audio/wind.mp3",i:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="bandpass";f.frequency.value=420;f.Q.value=.5;g.gain.value=.5;n.connect(f).connect(g).connect(o);
    const a=wander(c,f.frequency,420,200,1.6),b=wander(c,g.gain,.5,.35,2.2);n.start();return()=>{a();b();try{n.stop()}catch(e){}}}}};
 Object.assign(SRC,{
- fire:{l:"Chimenea",v:.5,f:"assets/audio/fire.mp3",i:'<path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 3-7 .5 1.5 1.5 2 2 1.5z"/>',
+ fire:{l:"Chimenea",v:.7,f:"assets/audio/fire.mp3",i:'<path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 3-7 .5 1.5 1.5 2 2 1.5z"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;g.gain.value=.5;n.connect(f).connect(g).connect(o);n.start();let a=true,t;
    const pop=()=>{if(!a)return;const s=c.createBufferSource(),b=c.createBuffer(1,c.sampleRate*.04,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);s.buffer=b;const q=c.createBiquadFilter(),h=c.createGain();q.type="bandpass";q.frequency.value=rand(1200,4500);q.Q.value=1.5;h.gain.value=rand(.15,.9);s.connect(q).connect(h).connect(o);s.start();t=setTimeout(pop,rand(40,500)*(Math.random()<.2?.2:1))};pop();
    return()=>{a=false;clearTimeout(t);try{n.stop()}catch(e){}}}},
@@ -47,14 +56,14 @@ Object.assign(SRC,{
 let unlocked=false;
 const M={ch:{},
  init(){for(const k in SRC)this.ch[k]={v:SRC[k].v,on:false,stop:null,g:null}},
- start(k){const c=this.ch[k];if(c.stop)return;const a=ensure();c.g=a.createGain();c.g.gain.value=c.v;c.g.connect(master);c.stop=bufs[k]?loopSample(a,bufs[k],c.g):SRC[k].build(a,c.g)},
+ start(k){const c=this.ch[k];if(c.stop)return;const a=ensure();c.g=a.createGain();c.g.gain.value=c.v;c.g.connect(master);c.stop=bufs[k]&&!SRC[k].shot?loopSample(a,bufs[k],c.g):SRC[k].build(a,c.g)},
  halt(k){const c=this.ch[k];if(!c.stop)return;c.stop();c.stop=null;try{c.g.disconnect()}catch(e){}},
  set(k,on){this.ch[k].on=on;if(unlocked){on?this.start(k):this.halt(k);keepAlive()}},
  vol(k,v){const c=this.ch[k];c.v=v;if(c.g)c.g.gain.setTargetAtTime(v,ctx.currentTime,.06)},
  apply(m){for(const k in this.ch){const s=m[k]||{v:this.ch[k].v,on:false};this.vol(k,s.v);this.set(k,!!s.on&&s.v>0)}},
  resume(){unlocked=true;for(const k in this.ch)if(this.ch[k].on)this.start(k);keepAlive()},
  state(){const o={};for(const k in this.ch)o[k]={v:+this.ch[k].v.toFixed(2),on:this.ch[k].on};return o}};
-rainP=Promise.all(Object.keys(SRC).filter(k=>SRC[k].f).map(k=>fetch(SRC[k].f).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>new Promise(res=>ensure().decodeAudioData(b,x=>{bufs[k]=x;res()},()=>res()))).catch(()=>{})));
+rainP=Promise.all(Object.keys(SRC).filter(k=>SRC[k].f).map(k=>fetch(SRC[k].f).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>new Promise(res=>ensure().decodeAudioData(b,x=>{bufs[k]=x;res()},()=>res()))).catch(()=>{})).concat(fetch("assets/audio/thunder.json").then(r=>r.ok?r.json():[]).then(j=>{TH=Array.isArray(j)?j:[]}).catch(()=>{})));
 
 /* ---------- INTERFAZ: dock + hoja de salas y mezcla (sliders grandes, sin arrastres) ---------- */
 const roomDef=()=>ROOMS.concat([PHOTO]).find(r=>r.id===S.room)||ROOMS[0];
@@ -76,7 +85,7 @@ const buildTabs=()=>{document.querySelectorAll("#tabs button").forEach((b,i)=>b.
  mv.oninput=()=>setVol(+mv.value);mv.onchange=()=>{if(S.vol>=.01)S.volPrev=S.vol;save()};
  // Icono = silenciar / volver al volumen que había
  $("#mvB").onclick=()=>{buzz(8);const cur=S.vol==null?1:S.vol;if(cur>=.01){S.volPrev=cur;mv.value=0}else mv.value=S.volPrev>=.01?S.volPrev:1;setVol(+mv.value);save()};
- const PRESETS=[{n:"Suave",m:{rain:.4,wind:.12},i:.45},{n:"Tormenta",m:{rain:.85,thunder:.6,wind:.35},i:.95},{n:"Concentración",m:{rain:.45,traffic:.18},i:.5},{n:"Dormir",m:{rain:.35,fire:.2},i:.35}];
+ const PRESETS=[{n:"Suave",m:{rain:.4,wind:.12},i:.45},{n:"Tormenta",m:{rain:.85,thunder:.6,wind:.35},i:.95},{n:"Concentración",m:{rain:.45,traffic:.18},i:.5},{n:"Dormir",m:{rain:.35,fire:.4},i:.35}];
  PRESETS.forEach(p=>{const b=document.createElement("button");b.className="chip";b.textContent=p.n;b.onclick=()=>{buzz(8);for(const k in SRC){const v=p.m[k];M.vol(k,v||M.ch[k].v);M.set(k,!!v)}S.int=p.i;syncUI();save()};$("#pres").appendChild(b)})};
 const buildUI=()=>{
  for(const k in SRC){const b=document.createElement("button");b.className="snd";b.setAttribute("aria-label",SRC[k].l);b.title=SRC[k].l;b.innerHTML=`<svg viewBox="0 0 24 24">${SRC[k].i}</svg>`;

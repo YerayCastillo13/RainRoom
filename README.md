@@ -14,12 +14,13 @@ Importa la carpeta como proyecto estático (sin build). `vercel.json` ya está i
 ## Estructura
 - `index.html`, `css/style.css`, `js/app.js`: la aplicación
 - `js/rooms.js`: registro de salas (fondo + mezcla de sonidos); añadir una sala = añadir un objeto
-- `assets/audio/`: `rain.mp3` (incluida) y, opcionales, `wind.mp3`, `fire.mp3`, `traffic.mp3`: grabaciones en bucle (15-60 s). Si existen sustituyen al sonido sintético
+- `assets/audio/`: `rain.mp3`, `wind.mp3`, `fire.mp3`, `traffic.mp3` (bucles sin cortes de 45-60 s), `thunder.mp3` + `thunder.json` (14 truenos sueltos y dónde empieza cada uno). Si un archivo falta, se usa el sonido sintético. Origen y licencias en `LICENCIAS.md`; se regeneran con `tools/build-audio.mjs`
+- `acerca/`, `sonidos/`, `contacto/`, `guias/`, `legal/`: páginas de contenido (necesarias para AdSense). `js/ads.js` y `tools/configurar.mjs`: publicidad y dominio, ver `PUBLICIDAD.md`
 - `js/widgets.js`: registro de widgets (reloj, dormir, intención); añadir uno = añadir un objeto
 - `assets/scenes/`: fotos de fondo. Si existen `city.jpg`, `forest.jpg` o `lounge.jpg`, sustituyen al dibujo de esa sala (recomendado: 1600 px o más en el lado largo)
 
 ## Antes de publicar con publicidad
-Comprueba que tienes derechos comerciales sobre la grabación de lluvia y sobre cualquier foto que añadas (propias o con licencia que lo permita).
+Sigue `PUBLICIDAD.md`. Los sonidos están documentados en `LICENCIAS.md`; faltan por documentar las fotos y vídeos de las salas.
 
 ## Modo noche (iPhone)
 Para que suene con el interruptor de silencio y con la pantalla bloqueada: abre la web desde HTTPS (Vercel), toca la pantalla una vez y, mejor aún, usa Compartir > "Añadir a pantalla de inicio".
@@ -28,7 +29,6 @@ Prueba: 1) interruptor en silencio, 2) bloquear la pantalla, 3) usar los control
 ## Fondos (la mayor palanca de realismo)
 - Foto: `assets/scenes/city.jpg`, `forest.jpg`, `lounge.jpg` (1600 px o más en el lado largo).
 - Vídeo en bucle: `assets/scenes/city.mp4`, `forest.mp4`, `lounge.mp4` (720p, sin audio, 10-20 s, idealmente < 8 MB). Si existe, sustituye a la foto y el cristal se aplica por encima. La foto sirve de miniatura y de respaldo.
-- Audio: `assets/audio/wind.mp3`, `fire.mp3`, `traffic.mp3` (bucles de 15-60 s).
 - Licencias: usa solo material propio o con licencia que permita uso comercial.
 
 ## Lista antes de lanzar
