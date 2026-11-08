@@ -105,6 +105,15 @@ const buildUI=()=>{
  const m=document.createElement("button");m.className="snd";m.setAttribute("aria-label","Salas y mezcla");m.title="Salas y mezcla";m.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>';
  m.onclick=()=>sheet.classList.add("open");dock.appendChild(m);$("#shClose").onclick=()=>sheet.classList.remove("open");
  document.addEventListener("input",e=>{if(e.target.type==="range")fillR(e.target)});
+ /* Deslizadores táctiles: en iOS el control nativo solo se agarra por su "pulgar" de 4px.
+    Aquí toda la barra responde: tocar salta al punto y arrastrar en horizontal ajusta; el gesto vertical sigue desplazando el panel. */
+ {let cur=null,x0=0,moved=false;
+  const setV=(i,x)=>{const r=i.getBoundingClientRect(),mn=+i.min||0,mx=+i.max||1,st=+i.step||0;let v=mn+Math.min(1,Math.max(0,(x-r.left)/r.width))*(mx-mn);if(st)v=Math.round(v/st)*st;v=Math.min(mx,Math.max(mn,v));if(+i.value!==v){i.value=v;i.dispatchEvent(new Event("input",{bubbles:true}))}};
+  document.addEventListener("pointerdown",e=>{const i=e.target;if(!i||i.type!=="range")return;cur=i;x0=e.clientX;moved=e.pointerType!=="touch";if(moved)setV(i,e.clientX);try{i.setPointerCapture(e.pointerId)}catch(_){}},true);
+  document.addEventListener("pointermove",e=>{if(!cur)return;if(!moved){if(Math.abs(e.clientX-x0)<6)return;moved=true}setV(cur,e.clientX)},true);
+  const end=()=>{if(!cur)return;const i=cur;cur=null;i.dispatchEvent(new Event("change",{bubbles:true}))};
+  document.addEventListener("pointerup",e=>{if(cur&&e.pointerType==="touch"&&!moved)setV(cur,e.clientX);end()},true);
+  document.addEventListener("pointercancel",()=>{cur=null},true)}
  const hd=$("#shHead");let sy=0,dy=0,t0=0,dg=false;
  hd.onpointerdown=e=>{if(e.target.closest(".x,#tabs button"))return;dg=true;sy=e.clientY;dy=0;t0=performance.now();hd.setPointerCapture(e.pointerId);sheet.style.transition="none"};
  hd.onpointermove=e=>{if(!dg)return;dy=Math.max(0,e.clientY-sy);sheet.style.transform=`translate(-50%,${dy}px)`};
