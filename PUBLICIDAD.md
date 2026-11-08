@@ -8,6 +8,7 @@ La web ya está preparada para AdSense. La publicidad está **apagada** (`js/ads
 - **Consentimiento**: `consent:"google"` carga el mensaje gratuito de Google (Funding Choices, certificado TCF) y el enlace «Preferencias de privacidad» del pie lo reabre. Hay que crearlo en la cuenta (ver abajo).
 - **Textos legales** de privacidad y cookies ya describen AdSense, cookies de terceros, consentimiento y cómo cambiarlo.
 - `ads.txt` (con plantilla), `sitemap.xml` con todas las páginas, enlaces a legales y contacto en el pie, `LICENCIAS.md` con el origen de cada sonido.
+- Mientras `preview:true` y AdSense apagado, el panel de ajustes muestra un anuncio de prueba sobre la hoja (ponlo en `false` para el despliegue público).
 - `?ads=demo` en cualquier página muestra marcadores de posición para ver cómo quedan los anuncios.
 
 ## Lo que depende de ti

@@ -17,25 +17,29 @@
 
    Reglas de diseño: el anuncio nunca bloquea el sonido ni los controles; sin vídeo ni sonido; desaparece al armar el
    temporizador de dormir (html[data-sleep]); no se pide ningún anuncio hasta que su contenedor esté visible.
-   Para probar el diseño sin red publicitaria: abre cualquier página con ?ads=demo. */
+   Mientras enabled sea false y preview true, el panel de ajustes muestra un anuncio de prueba sobre la hoja (pon false para quitarlo).
+   Para ver también los de las páginas de contenido sin red publicitaria: abre cualquier página con ?ads=demo. */
 (()=>{"use strict";
 const CFG={enabled:false,client:"ca-pub-XXXXXXXXXXXXXXXX",
  slots:{content:"0000000000",room:"0000000001",sheet:"0000000002"},
  placements:{content:true,room:false,sheet:false},
- consent:"google"};
+ consent:"google",
+ preview:true};
 const demo=new URLSearchParams(location.search).get("ads")==="demo";
-if(!CFG.enabled&&!demo)return;
+// preview: mientras AdSense esté apagado, la sala muestra un anuncio de prueba (sin red, sin sonido, sin cookies) para ver el diseño.
+const prev=CFG.preview&&!CFG.enabled;
+if(!CFG.enabled&&!demo&&!prev)return;
 
 const KEY="rainroom.consent";let consent=null;
 try{consent=localStorage.getItem(KEY)}catch(e){}
-const ok=()=>demo||CFG.consent==="google"||consent==="granted";
-const on=p=>demo||CFG.placements[p];
+const ok=()=>demo||prev||CFG.consent==="google"||consent==="granted";
+const on=p=>demo||(prev?p==="sheet":CFG.placements[p]);
 
 const script=(src,attrs)=>new Promise((res,rej)=>{const s=document.createElement("script");s.async=true;s.src=src;for(const k in attrs||{})s.setAttribute(k,attrs[k]);s.onload=res;s.onerror=rej;document.head.appendChild(s)});
 
 // Mensaje de consentimiento de Google (Funding Choices): se carga antes que los anuncios.
 let cmp=null;
-const loadCMP=()=>cmp||(cmp=CFG.consent!=="google"||demo?Promise.resolve():(()=>{
+const loadCMP=()=>cmp||(cmp=CFG.consent!=="google"||demo||prev?Promise.resolve():(()=>{
  const pub=CFG.client.replace(/^ca-/,"");
  const p=script("https://fundingchoicesmessages.google.com/i/"+encodeURIComponent(pub)+"?ers=1").catch(()=>{});
  const mark=()=>{if(window.frames.googlefcPresent)return;if(document.body){const f=document.createElement("iframe");f.style.cssText="width:0;height:0;border:none;z-index:-1000;left:-1000px;top:-1000px;display:none";f.name="googlefcPresent";document.body.appendChild(f)}else setTimeout(mark,0)};
@@ -46,7 +50,7 @@ const loadSDK=()=>sdk||(sdk=loadCMP().then(()=>script("https://pagead2.googlesyn
 
 const filled=new WeakSet();
 const fill=(box,slot,fmt,full)=>{if(!box||filled.has(box)||!ok())return;filled.add(box);
- if(demo){box.innerHTML='<div class="adph">Anuncio de prueba<br>'+fmt+'</div>';return}
+ if(demo||prev){box.innerHTML='<div class="adph">Anuncio de prueba<br>'+fmt+'</div>';return}
  loadSDK().then(()=>{const ins=document.createElement("ins");ins.className="adsbygoogle";ins.style.display="block";ins.style.width="100%";
   ins.setAttribute("data-ad-client",CFG.client);ins.setAttribute("data-ad-slot",slot);ins.setAttribute("data-ad-format",fmt);ins.setAttribute("data-full-width-responsive",full?"true":"false");
   box.appendChild(ins);try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}}).catch(()=>{const w=box.closest("[data-ad],#adw,#adSheet");if(w)w.hidden=true})};
@@ -68,9 +72,11 @@ const showRoom=()=>{if(!adw||!on("room")||!ok())return;adw.hidden=false;fill(doc
 document.getElementById("adx")?.addEventListener("click",()=>{adw.hidden=true});
 if(adw)setTimeout(showRoom,1200);
 
-// Banner del panel de ajustes: solo se pide cuando el panel se abre.
-const showSheet=()=>{if(!as||!on("sheet")||!ok())return;as.hidden=false;fill(document.getElementById("adSlot2"),CFG.slots.sheet,"horizontal")};
-if(sheet&&as)new MutationObserver(()=>{if(sheet.classList.contains("open"))showSheet()}).observe(sheet,{attributes:true,attributeFilter:["class"]});
+// Banner sobre el panel de ajustes: aparece cada vez que se abre el panel y se va al cerrarlo. Se pide el anuncio solo la primera vez.
+let sheetX=false;
+const showSheet=()=>{if(!as||!on("sheet")||!ok()||sheetX)return;as.hidden=false;fill(document.getElementById("adSlot2"),CFG.slots.sheet,"horizontal")};
+document.getElementById("adx2")?.addEventListener("click",()=>{sheetX=true;as.hidden=true});
+if(sheet&&as)new MutationObserver(()=>{if(sheet.classList.contains("open")){sheetX=false;showSheet()}else as.hidden=true}).observe(sheet,{attributes:true,attributeFilter:["class"]});
 
 // Punto de entrada para un CMP propio (consent:"custom").
 window.RainAds={consent(v){consent=v?"granted":"denied";try{localStorage.setItem(KEY,consent)}catch(e){}

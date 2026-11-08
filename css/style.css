@@ -209,9 +209,6 @@ input[type=range]:focus-visible{outline-offset:2px}
 #msg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:min(360px,calc(100% - 32px));padding:12px 18px;border-radius:16px;text-align:center;font:500 15px/1.4 var(--f-ui);color:var(--fg);background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:0 10px 40px rgba(0,0,0,.35);pointer-events:none;transition:opacity .6s;animation:msgPulse 2.6s ease-in-out infinite}
 @keyframes msgPulse{50%{transform:translate(-50%,-50%) scale(1.025)}}
 body:has(#sheet.open) #msg{opacity:0!important}
-@media (max-width:600px){
- #msg{top:auto;bottom:calc(var(--g) + 82px + var(--sab));transform:translateX(-50%);animation-name:msgPulseM}
-}
 @keyframes msgPulseM{50%{transform:translateX(-50%) scale(1.025)}}
 
 /* ---------- Publicidad ---------- */
@@ -223,8 +220,11 @@ body:has(#sheet.open) #msg{opacity:0!important}
 .adh button:hover{background:var(--fill);color:var(--fg)}
 .adb{min-height:100px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .adb .adph{padding:12px;font:400 13px/1.4 var(--f-ui);color:var(--mu);text-align:center}
-#adSheet{flex:0 0 auto;margin:0 -20px;padding-bottom:var(--sab);background:rgba(15,18,24,.96);border-top:1px solid var(--ln)}
-#adSheet .adb{min-height:50px}
+/* Anuncio del panel: flota justo encima de la hoja de ajustes mientras está abierta */
+#adSheet{position:fixed;left:50%;bottom:calc(min(74vh,660px) + 8px);bottom:calc(min(74dvh,660px) + 8px);transform:translateX(-50%);width:min(332px,calc(100% - 24px));border-radius:var(--r-card);overflow:hidden;background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);animation:adIn .5s var(--ease) backwards}
+#adSheet .adh{height:26px;font-size:11px}#adSheet .adh button{width:30px;height:24px;font-size:12px}
+#adSheet .adb{min-height:50px}#adSheet .adb .adph{padding:6px}
+@media (max-height:700px){#adSheet{display:none}}
 html[data-sleep="1"] #adw,html[data-sleep="1"] #adSheet{display:none}
 @media (max-height:640px){#adw{display:none}}
 
