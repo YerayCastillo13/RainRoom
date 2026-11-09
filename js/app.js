@@ -21,7 +21,7 @@ const loopSample=(c,buf,out)=>{const F=Math.min(1.6,buf.duration/3),N=64,up=new 
  play(c.currentTime+.05,true);
  return()=>{alive=false;clearTimeout(tm);srcs.forEach(s=>{try{s.stop()}catch(e){}})}};
 const SRC={
- rain:{l:"Lluvia",v:.7,f:"assets/audio/rain.mp3",i:'<path d="M7 15a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 17 15"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/>',
+ rain:{l:"Lluvia",v:.7,f:"assets/audio/rain.mp3?v=3",i:'<path d="M7 15a4 4 0 0 1 .5-8 5 5 0 0 1 9.5 1.5A3.5 3.5 0 0 1 17 15"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=900;n.connect(f).connect(o);n.start();return()=>{try{n.stop()}catch(e){}}}},
  thunder:{l:"Trueno",v:.5,f:"assets/audio/thunder.mp3",shot:true,i:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   /* Truenos reales: thunder.mp3 junta 14 truenos sueltos y thunder.json dice dónde empieza cada uno [inicio, duración].
@@ -34,15 +34,15 @@ const SRC={
     s.connect(f).connect(g);out.connect(o);const w=c.currentTime+d;s.start(w,st,du);live.add(s);s.onended=()=>{live.delete(s);try{out.disconnect()}catch(e){}}};
    return()=>{boomFn=null;live.forEach(s=>{try{s.stop()}catch(e){}})}}
    const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=130;g.gain.value=0;n.connect(f).connect(g).connect(o);n.start();const boom=d=>{const w=c.currentTime+d;g.gain.cancelScheduledValues(c.currentTime);g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(rand(.5,1),w+.12);g.gain.exponentialRampToValueAtTime(1e-4,w+rand(2.5,5.5))};boomFn=boom;return()=>{boomFn=null;try{n.stop()}catch(e){}}}},
- wind:{l:"Viento",v:.2,f:"assets/audio/wind.mp3",i:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+ wind:{l:"Viento",v:.2,f:"assets/audio/wind.mp3?v=3",i:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="bandpass";f.frequency.value=420;f.Q.value=.5;g.gain.value=.5;n.connect(f).connect(g).connect(o);
    const a=wander(c,f.frequency,420,200,1.6),b=wander(c,g.gain,.5,.35,2.2);n.start();return()=>{a();b();try{n.stop()}catch(e){}}}}};
 Object.assign(SRC,{
- fire:{l:"Chimenea",v:.7,f:"assets/audio/fire.mp3",i:'<path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 3-7 .5 1.5 1.5 2 2 1.5z"/>',
+ fire:{l:"Chimenea",v:.7,f:"assets/audio/fire.mp3?v=3",i:'<path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 3-7 .5 1.5 1.5 2 2 1.5z"/>',
   build(c,o){const n=noise(c),f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=380;g.gain.value=.5;n.connect(f).connect(g).connect(o);n.start();let a=true,t;
    const pop=()=>{if(!a)return;const s=c.createBufferSource(),b=c.createBuffer(1,c.sampleRate*.04,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);s.buffer=b;const q=c.createBiquadFilter(),h=c.createGain();q.type="bandpass";q.frequency.value=rand(1200,4500);q.Q.value=1.5;h.gain.value=rand(.15,.9);s.connect(q).connect(h).connect(o);s.start();t=setTimeout(pop,rand(40,500)*(Math.random()<.2?.2:1))};pop();
    return()=>{a=false;clearTimeout(t);try{n.stop()}catch(e){}}}},
- traffic:{l:"Tráfico",v:.35,f:"assets/audio/traffic.mp3",i:'<path d="M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v1.5M17 19v1.5"/>',
+ traffic:{l:"Tráfico",v:.35,f:"assets/audio/traffic.mp3?v=3",i:'<path d="M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v1.5M17 19v1.5"/>',
   build(c,o){const n=noise(c),nb=n.buffer,f=c.createBiquadFilter(),g=c.createGain();f.type="lowpass";f.frequency.value=200;g.gain.value=.7;n.connect(f).connect(g).connect(o);n.start();
    const h=c.createBufferSource(),hb=c.createBiquadFilter(),hg=c.createGain();h.buffer=nb;h.loop=true;hb.type="bandpass";hb.frequency.value=1400;hb.Q.value=.5;hg.gain.value=.05;h.connect(hb).connect(hg).connect(o);h.start();
    const wd=wander(c,g.gain,.7,.25,2.5);let a=true,t;

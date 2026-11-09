@@ -20,9 +20,9 @@ const maxdb=f=>{const r=spawnSync("ffmpeg",["-nostats","-i",f,"-af","volumedetec
 
 /* [archivo original, inicio, duración final, fundido, destino] */
 const LOOPS=[
- ["669416_11673893-hq.mp3",120,45,4,"traffic.mp3"],
+ ["669416_11673893-hq.mp3",280,45,4,"traffic.mp3"],
  ["501417_10869493-hq.mp3",210,45,4,"fire.mp3"],
- ["156414_1661766-hq.mp3",8,60,5,"wind.mp3"],
+ ["156414_1661766-hq.mp3",50,55,5,"wind.mp3"],
  ["662016_213249-hq.mp3",630,45,4,"rain.mp3"]];
 /* La lluvia original lleva zumbidos de motor/red (100 Hz y armónicos, 288 Hz...) y retumbe grave: se quitan con muescas de 3 Hz y un paso alto de 4.º orden.
    Además, 3 golpes sueltos (15,10 s, 30,11 s y 34,61 s del bucle) se taparon a mano con lluvia limpia de otro punto del mismo bucle; este script no lo repite. */
@@ -34,8 +34,10 @@ for(const [f,ss,L,X,dst] of LOOPS){
  const wav=join(tmp,dst+".wav");
  ff("-ss",ss,"-t",L+X,"-i",join(src,f),"-filter_complex",
   `[0:a]aresample=44100,${PRE[dst]||"highpass=f=25"},asplit=3[a][b][c];`+
-  `[a]atrim=0:${X},afade=t=in:d=${X}:curve=qsin,asetpts=PTS-STARTPTS[h];`+
-  `[b]atrim=${L}:${L+X},afade=t=out:d=${X}:curve=qsin,asetpts=PTS-STARTPTS[t];`+
+  /* asetpts ANTES de afade: si no, el fundido de salida de [t] se calcula con los tiempos originales (L..L+X), ya pasados,
+     y la cola queda muda: el bucle empezaría casi en silencio y subiría 3-4 s (un bajón de volumen en cada vuelta). */
+  `[a]atrim=0:${X},asetpts=PTS-STARTPTS,afade=t=in:d=${X}:curve=qsin[h];`+
+  `[b]atrim=${L}:${L+X},asetpts=PTS-STARTPTS,afade=t=out:d=${X}:curve=qsin[t];`+
   `[c]atrim=${X}:${L},asetpts=PTS-STARTPTS[m];`+
   `[h][t]amix=inputs=2:normalize=0:duration=longest[bl];[bl][m]concat=n=2:v=0:a=1[o]`,"-map","[o]",wav);
  const g=-20-lufs(wav);
