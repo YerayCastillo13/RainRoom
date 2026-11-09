@@ -12,8 +12,8 @@ La web ya está preparada para AdSense. La publicidad está **apagada** (`js/ads
 - `?ads=demo` en cualquier página muestra marcadores de posición para ver cómo quedan los anuncios.
 
 ## Lo que depende de ti
-1. **Dominio propio** (AdSense no suele aprobar `*.vercel.app`). Al tenerlo: `node tools/configurar.mjs --dominio https://tudominio.com` actualiza canonical, og:url, JSON-LD, sitemap, robots y textos legales.
-2. **Rellenar** `[TU NOMBRE]` y `[TU EMAIL]` en `legal/privacidad.html`, `legal/aviso-legal.html` y `contacto/index.html` (están resaltados). Sin identificar al titular, AdSense y la ley lo ven mal.
+1. **Dominio propio** (AdSense no suele aprobar `*.workers.dev` ni `*.pages.dev` ni `*.vercel.app`). Al tenerlo: `node tools/configurar.mjs --dominio https://tudominio.com` actualiza canonical, og:url, JSON-LD, sitemap, robots y textos legales.
+2. **Datos del titular**: nombre y correo (hola@dimrain.com) ya están en `legal/privacidad.html`, `legal/aviso-legal.html` y `contacto/index.html`. **Pendiente al empezar a monetizar:** añadir NIF y domicilio de la actividad en el aviso legal (hay un comentario TODO). Sin identificar al titular, AdSense y la ley lo ven mal.
 3. **Alta como autónomo/empresa** si vas a cobrar (consúltalo con una gestoría).
 4. **Solicitar AdSense** con el dominio ya publicado y las páginas indexadas (Search Console). Suele tardar de días a semanas; mejor con algo de tráfico.
 5. En AdSense: **Privacidad y mensajes → Consentimiento europeo → crear y publicar el mensaje**. Crea un **bloque de anuncios responsive** y copia su ID.

@@ -1,4 +1,4 @@
-/* RainRoom · widgets. Añadir uno = añadir un objeto a WIDGETS:
+/* Dimrain · widgets. Añadir uno = añadir un objeto a WIDGETS:
    name, cfg() → configuración por defecto, mount(el, cfg, api) → función de limpieza. api = {save, chime, fadeOut} */
 const WIDGETS={
  clock:{name:"Reloj",cfg:()=>({}),mount(e){e.innerHTML='<div class="ck"></div><div class="cd"></div>';const t=e.firstChild,d=e.lastChild,

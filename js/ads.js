@@ -1,4 +1,4 @@
-/* RainRoom · publicidad.
+/* Dimrain · publicidad.
    Por defecto está APAGADA: sin configurar no se muestra nada ni se carga ningún script de terceros.
 
    Cómo activarla cuando tengas dominio y la cuenta de AdSense aprobada (ver PUBLICIDAD.md):
@@ -30,7 +30,7 @@ const demo=new URLSearchParams(location.search).get("ads")==="demo";
 const prev=CFG.preview&&!CFG.enabled;
 if(!CFG.enabled&&!demo&&!prev)return;
 
-const KEY="rainroom.consent";let consent=null;
+const KEY="dimrain.consent";let consent=null;
 try{consent=localStorage.getItem(KEY)}catch(e){}
 const ok=()=>demo||prev||CFG.consent==="google"||consent==="granted";
 const on=p=>demo||(prev?p==="sheet":CFG.placements[p]);

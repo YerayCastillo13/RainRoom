@@ -1,4 +1,4 @@
-/* RainRoom · salas. Para añadir una: crea su función de dibujo y regístrala en ROOMS.
+/* Dimrain · salas. Para añadir una: crea su función de dibujo y regístrala en ROOMS.
    video = bucle opcional (mp4, 720p, sin audio); src = foto opcional en assets/scenes (si existe, sustituye al dibujo); crop/cropP = recorte [x,y,w,h] de la foto horizontal/vertical para quedarse solo con el cristal (ay/ayP = encuadre vertical, 0 arriba · 1 abajo; ax/axP = horizontal, 0 izquierda · 1 derecha); w = widgets iniciales; fx = efectos vivos (mist: niebla que se desplaza; glow: luz cálida que parpadea); mix = sonidos que se activan al entrar (v = volumen); int = intensidad de las gotas. */
 const rand=(a,b)=>a+Math.random()*(b-a);
 const drawCity=(c,w,h)=>{const u=w/400;let g=c.createLinearGradient(0,0,0,h);

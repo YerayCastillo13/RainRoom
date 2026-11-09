@@ -1,4 +1,4 @@
-/* RainRoom · genera los audios de assets/audio a partir de las grabaciones originales de Freesound (CC0).
+/* Dimrain · genera los audios de assets/audio a partir de las grabaciones originales de Freesound (CC0).
    Uso:  node tools/build-audio.mjs <carpeta-con-los-originales>
    Necesita ffmpeg en el PATH. Los originales no se guardan en el repositorio (ver LICENCIAS.md).
    - Bucles (rain, traffic, fire, wind): se recorta un tramo estable y se funde su final con su principio (potencia constante),

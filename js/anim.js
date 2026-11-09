@@ -1,4 +1,4 @@
-/* RainRoom · animación por código en bucle perfecto.
+/* Dimrain · animación por código en bucle perfecto.
    Cada sala puede llevar `anim` en rooms.js. Todo se mide en píxeles de la imagen original (W×H)
    y se repite exactamente cada P segundos: las frecuencias son siempre múltiplos enteros de 1/P,
    así que no hay costura al volver al principio.

@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const $=s=>document.querySelector(s),clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),rand=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t;
-const KEY="rainroom.v4";let S={int:.7,room:"city",mix:{}};
+const KEY="dimrain.v4";let S={int:.7,room:"city",mix:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)))}catch(e){}
 const save=()=>{S.mix=S.mix||{};S.mix[S.room]={snd:M.state(),int:S.int,w:stateW()};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
@@ -252,7 +252,7 @@ try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
 const hasMS="mediaSession"in navigator;
 const anyOn=()=>Object.keys(M.ch).some(k=>M.ch[k].on);
 const keepAlive=()=>{if(anyOn()){const p=ka.play();if(p&&p.catch)p.catch(()=>{});if(hasMS)navigator.mediaSession.playbackState="playing"}else{ka.pause();if(hasMS)navigator.mediaSession.playbackState="paused"}};
-const msMeta=()=>{if(hasMS&&typeof MediaMetadata!=="undefined")navigator.mediaSession.metadata=new MediaMetadata({title:"RainRoom",artist:roomDef().name,album:"Tu sala"})};
+const msMeta=()=>{if(hasMS&&typeof MediaMetadata!=="undefined")navigator.mediaSession.metadata=new MediaMetadata({title:"Dimrain",artist:roomDef().name,album:"Tu sala"})};
 if(hasMS){try{navigator.mediaSession.setActionHandler("pause",()=>{paused=Object.keys(M.ch).filter(k=>M.ch[k].on);paused.forEach(k=>M.set(k,false));syncUI()});
  navigator.mediaSession.setActionHandler("play",()=>{ka.play().catch(()=>{});(paused.length?paused:["rain"]).forEach(k=>{if(M.ch[k].v<.05)M.vol(k,SRC[k].v);M.set(k,true)});paused=[];syncUI()})}catch(e){}}
 const revive=()=>{if(ctx&&unlocked&&anyOn()&&ctx.state!=="running")ctx.resume().catch(()=>{});if(sleepEnd&&Date.now()>=sleepEnd)sleepDone()};
@@ -312,7 +312,7 @@ const frame=t=>{if(S.night&&(fc++&1)){requestAnimationFrame(frame);return}if(vid
  gl.uniform2f(uP,par.x,par.y);fogV=lerp(fogV,S.int<.05?0:.7+.2*S.int,.04);gl.uniform1f(uF,fogV);gl.uniform1f(uL,lf(t/1e3-strike));gl.uniform1f(uT,(t%1e4)/1e3);gl.uniform1f(uK,t/1e3);gl.uniform1f(uM,curFx.mist||0);gl.uniform1f(uW,Math.min(WG,1.4));gl.uniform1f(uX,wph);const gg=curFx.glow||{x:0,y:0,r:1,s:0,c:[0,0,0]};gl.uniform4f(uG,gg.x,gg.y,gg.r,gg.s);gl.uniform3f(uGc,gg.c[0],gg.c[1],gg.c[2]);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(frame)};
 
 /* ---------- FOTO PROPIA (se guarda en el dispositivo si el navegador lo permite) ---------- */
-const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("rainroom",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);
+const idb=(m,v)=>new Promise(r=>{try{const q=indexedDB.open("dimrain",1);q.onupgradeneeded=()=>q.result.createObjectStore("k");q.onerror=()=>r(null);
  q.onsuccess=()=>{const s=q.result.transaction("k",m==="get"?"readonly":"readwrite").objectStore("k"),x=m==="get"?s.get("photo"):m==="put"?s.put(v,"photo"):s.delete("photo");x.onsuccess=()=>r(x.result);x.onerror=()=>r(null)}}catch(e){r(null)}});
 const setPhoto=(blob,sel)=>new Promise(res=>{const im=new Image();im.onload=()=>{photo=im;delete thumbs.photo;$("#fabX").style.display="flex";sel?selectRoom("photo"):(buildScene(),renderRooms());res(true)};im.onerror=()=>res(false);im.src=URL.createObjectURL(blob)});
 $("#fabP").onclick=()=>$("#file").click();

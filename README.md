@@ -1,4 +1,4 @@
-# RainRoom
+# Dimrain
 
 Tu sala de lluvia: cristal mojado en WebGL, sonidos mezclables y fondos propios.
 
@@ -8,8 +8,8 @@ El audio se carga como archivo, así que hace falta un servidor (no vale abrir `
     npx serve .
     # o: python3 -m http.server 8080
 
-## Subir a Vercel
-Importa la carpeta como proyecto estático (sin build). `vercel.json` ya está incluido.
+## Publicar
+Es una web estática (sin build). Hoy está en Cloudflare (Worker con archivos estáticos conectado a GitHub); `_headers` lleva las cabeceras de caché. También vale Vercel (`vercel.json` incluido) o cualquier hosting estático.
 
 ## Estructura
 - `index.html`, `css/style.css`, `js/app.js`: la aplicación
@@ -23,7 +23,7 @@ Importa la carpeta como proyecto estático (sin build). `vercel.json` ya está i
 Sigue `PUBLICIDAD.md`. Los sonidos están documentados en `LICENCIAS.md`; faltan por documentar las fotos y vídeos de las salas.
 
 ## Modo noche (iPhone)
-Para que suene con el interruptor de silencio y con la pantalla bloqueada: abre la web desde HTTPS (Vercel), toca la pantalla una vez y, mejor aún, usa Compartir > "Añadir a pantalla de inicio".
+Para que suene con el interruptor de silencio y con la pantalla bloqueada: abre la web desde HTTPS (Cloudflare, Vercel u otro hosting), toca la pantalla una vez y, mejor aún, usa Compartir > "Añadir a pantalla de inicio".
 Prueba: 1) interruptor en silencio, 2) bloquear la pantalla, 3) usar los controles de la pantalla de bloqueo.
 
 ## Fondos (la mayor palanca de realismo)
@@ -33,5 +33,5 @@ Prueba: 1) interruptor en silencio, 2) bloquear la pantalla, 3) usar los control
 
 ## Lista antes de lanzar
 - Aviso legal, política de privacidad y cookies; si hay publicidad en la UE, consentimiento previo.
-- Nombre y dominio: comprueba disponibilidad y marcas parecidas ("Rain Room" es el nombre de una instalación artística conocida).
+- Nombre y dominio: Dimrain (dimrain.com). Comprobado en TMView (UE y EE. UU.) sin marcas idénticas; DIMRAN (EE. UU., clase 9, accesorios físicos) es la más parecida. Pendiente: búsqueda oficial en EUIPO/USPTO y compra del dominio.
 - Probar en iPhone (Safari y app instalada), Android (Chrome) y escritorio (Chrome, Safari, Firefox).

@@ -1,4 +1,4 @@
-/* RainRoom · configura el dominio y la publicidad en todo el proyecto de una vez.
+/* Dimrain · configura el dominio y la publicidad en todo el proyecto de una vez.
 
    Cambiar de dominio (canonical, og:url, JSON-LD, sitemap, robots, textos legales):
      node tools/configurar.mjs --dominio https://tudominio.com
