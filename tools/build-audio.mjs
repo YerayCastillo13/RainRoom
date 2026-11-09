@@ -24,12 +24,16 @@ const LOOPS=[
  ["501417_10869493-hq.mp3",210,45,4,"fire.mp3"],
  ["156414_1661766-hq.mp3",8,60,5,"wind.mp3"],
  ["662016_213249-hq.mp3",630,45,4,"rain.mp3"]];
+/* La lluvia original lleva zumbidos de motor/red (100 Hz y armónicos, 288 Hz...) y retumbe grave: se quitan con muescas de 3 Hz y un paso alto de 4.º orden.
+   Además, 3 golpes sueltos (15,10 s, 30,11 s y 34,61 s del bucle) se taparon a mano con lluvia limpia de otro punto del mismo bucle; este script no lo repite. */
+const HUM=[100.3,141.3,199.9,240.9,259.1,288,287.4,300.1,341.2,358.7,382.2,399.7,452.2,575.5,781.9,96.2].map(f=>`bandreject=f=${f}:width_type=h:w=3`).join(",");
+const PRE={"rain.mp3":`highpass=f=90:poles=2,highpass=f=90:poles=2,${HUM}`};
 const only=process.argv[3]; /* opcional: "rain" regenera solo rain.mp3 */
 for(const [f,ss,L,X,dst] of LOOPS){
  if(only&&!dst.startsWith(only))continue;
  const wav=join(tmp,dst+".wav");
  ff("-ss",ss,"-t",L+X,"-i",join(src,f),"-filter_complex",
-  `[0:a]aresample=44100,highpass=f=25,asplit=3[a][b][c];`+
+  `[0:a]aresample=44100,${PRE[dst]||"highpass=f=25"},asplit=3[a][b][c];`+
   `[a]atrim=0:${X},afade=t=in:d=${X}:curve=qsin,asetpts=PTS-STARTPTS[h];`+
   `[b]atrim=${L}:${L+X},afade=t=out:d=${X}:curve=qsin,asetpts=PTS-STARTPTS[t];`+
   `[c]atrim=${X}:${L},asetpts=PTS-STARTPTS[m];`+
