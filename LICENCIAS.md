@@ -9,7 +9,7 @@ Todos los audios externos proceden de [Freesound](https://freesound.org) y sus a
 | `wind.mp3` | «Wind blowing into some cactus spine, on the top of the mountain, in the desert of Atacama (Chile).» | felix.blume | https://freesound.org/people/felix.blume/sounds/156414/ | CC0 |
 | `thunder.mp3` (siete truenos) | «Thunderstorm» | regosss | https://freesound.org/people/regosss/sounds/238295/ | CC0 |
 | `thunder.mp3` (siete truenos) | «Lightning» | johnnydekk | https://freesound.org/people/johnnydekk/sounds/625354/ | CC0 |
-| `rain.mp3` | «Two Hours of rain and soothing thunder» (tramo de 45 s sin truenos ni pájaros) | Simon Spiers | https://freesound.org/people/Simon%20Spiers/sounds/662016/ | CC0 |
+| `rain.mp3` | «Two Hours of rain and soothing thunder» (tramo de 45 s, minutos 10:30–11:15 del original, sin truenos ni pájaros) | Simon Spiers | https://freesound.org/people/Simon%20Spiers/sounds/662016/ | CC0 |
 
 Guarda aquí una captura o PDF de cada ficha si quieres tener prueba de la licencia (las fichas pueden cambiar o desaparecer).
 

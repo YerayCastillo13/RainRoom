@@ -1,5 +1,5 @@
 /* Dimrain · genera los audios de assets/audio a partir de las grabaciones originales de Freesound (CC0).
-   Uso:  node tools/build-audio.mjs <carpeta-con-los-originales>
+   Uso:  node tools/build-audio.mjs <carpeta-con-los-originales> [rain|wind|fire|traffic]
    Necesita ffmpeg en el PATH. Los originales no se guardan en el repositorio (ver LICENCIAS.md).
    - Bucles (rain, traffic, fire, wind): se recorta un tramo estable y se funde su final con su principio (potencia constante),
      de modo que el archivo enlaza consigo mismo sin cortes aunque se reproduzca con loop nativo.
@@ -23,8 +23,10 @@ const LOOPS=[
  ["669416_11673893-hq.mp3",120,45,4,"traffic.mp3"],
  ["501417_10869493-hq.mp3",210,45,4,"fire.mp3"],
  ["156414_1661766-hq.mp3",8,60,5,"wind.mp3"],
- ["662016_213249-hq.mp3",182,45,4,"rain.mp3"]];
+ ["662016_213249-hq.mp3",630,45,4,"rain.mp3"]];
+const only=process.argv[3]; /* opcional: "rain" regenera solo rain.mp3 */
 for(const [f,ss,L,X,dst] of LOOPS){
+ if(only&&!dst.startsWith(only))continue;
  const wav=join(tmp,dst+".wav");
  ff("-ss",ss,"-t",L+X,"-i",join(src,f),"-filter_complex",
   `[0:a]aresample=44100,highpass=f=25,asplit=3[a][b][c];`+
@@ -36,6 +38,7 @@ for(const [f,ss,L,X,dst] of LOOPS){
  ff("-i",wav,"-af",`volume=${g.toFixed(2)}dB,alimiter=limit=0.8:level=disabled`,"-c:a","libmp3lame","-b:a","96k",join(out,dst));
  console.log(dst,"ganancia",g.toFixed(1),"dB")}
 
+if(only){console.log("listo (solo "+only+")");process.exit(0)}
 /* [archivo, inicio, duración] */
 const BOOMS=[
  ["238295_4308636-hq.mp3",4.4,12.6],["238295_4308636-hq.mp3",20,9.6],["238295_4308636-hq.mp3",29.8,11.8],["238295_4308636-hq.mp3",42.2,9.8],
