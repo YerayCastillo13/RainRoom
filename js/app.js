@@ -350,4 +350,10 @@ resize();selectRoom(S.room,true);ROOMS.forEach(r=>{if(r.src){const im=new Image(
 // API para js/pages.js (páginas superpuestas): aplicar una mezcla sin recargar y saber si hay sonido activo.
 window.Dimrain={openMix(q){try{const id=mixFromQuery(q instanceof URLSearchParams?q:new URLSearchParams(q));if(id){sheet.classList.remove("open");selectRoom(id);return true}}catch(e){}return false},
  playing:()=>!!ctx&&ctx.state==="running"};
+// Apoyo voluntario: el panel de Ko-fi se carga (iframe) solo cuando la persona lo abre. Hasta entonces no se contacta con Ko-fi ni se instala ninguna cookie.
+{const kb=$("#kofiB"),kx=$("#kofiBox"),KOFI="https://ko-fi.com/yeraycastillo";
+ if(kb&&kx)kb.onclick=()=>{const abrir=kx.hidden;kx.hidden=!abrir;kb.setAttribute("aria-expanded",abrir);
+  if(abrir&&!kx.firstChild){const f=document.createElement("iframe");f.src=KOFI+"/?hidefeed=true&widget=true&embed=true&preview=true";f.title="Apoyar a Dimrain en Ko-fi";f.allow="payment";f.loading="lazy";f.referrerPolicy="strict-origin-when-cross-origin";
+   const a=document.createElement("a");a.href=KOFI;a.target="_blank";a.rel="noopener";a.textContent="Abrir en Ko-fi ↗";kx.append(f,a)}
+  if(abrir)setTimeout(()=>kx.scrollIntoView({block:"nearest",behavior:"smooth"}),50)}}
 })();
