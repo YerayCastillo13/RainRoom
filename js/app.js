@@ -352,6 +352,10 @@ window.Dimrain={openMix(q){try{const id=mixFromQuery(q instanceof URLSearchParam
  playing:()=>!!ctx&&ctx.state==="running"};
 // Apoyo voluntario: el panel de Ko-fi se carga (iframe) solo cuando la persona lo abre. Hasta entonces no se contacta con Ko-fi ni se instala ninguna cookie.
 {const kb=$("#kofiB"),kx=$("#kofiBox"),KOFI="https://ko-fi.com/yeraycastillo";
+ // Ajustes siempre se muestra con el panel plegado: se pliega al cerrar la hoja (por cualquier vía) y al pulsar la pestaña Ajustes
+ const plegar=()=>{if(kx.hidden)return;kx.hidden=true;kb.setAttribute("aria-expanded","false")};
+ if(kb&&kx){new MutationObserver(()=>{if(!sheet.classList.contains("open"))plegar()}).observe(sheet,{attributes:true,attributeFilter:["class"]});
+  document.querySelectorAll("#tabs button")[3].addEventListener("click",plegar)}
  if(kb&&kx)kb.onclick=()=>{const abrir=kx.hidden;kx.hidden=!abrir;kb.setAttribute("aria-expanded",abrir);
   if(abrir&&!kx.firstChild){const f=document.createElement("iframe");f.src=KOFI+"/?hidefeed=true&widget=true&embed=true&preview=true";f.title="Apoyar a Dimrain en Ko-fi";f.allow="payment";f.loading="lazy";f.referrerPolicy="strict-origin-when-cross-origin";
    const a=document.createElement("a");a.href=KOFI;a.target="_blank";a.rel="noopener";a.textContent="Abrir en Ko-fi ↗";kx.append(f,a)}
