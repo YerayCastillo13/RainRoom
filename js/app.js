@@ -356,4 +356,8 @@ window.Dimrain={openMix(q){try{const id=mixFromQuery(q instanceof URLSearchParam
   if(abrir&&!kx.firstChild){const f=document.createElement("iframe");f.src=KOFI+"/?hidefeed=true&widget=true&embed=true&preview=true";f.title="Apoyar a Dimrain en Ko-fi";f.allow="payment";f.loading="lazy";f.referrerPolicy="strict-origin-when-cross-origin";
    const a=document.createElement("a");a.href=KOFI;a.target="_blank";a.rel="noopener";a.textContent="Abrir en Ko-fi ↗";kx.append(f,a)}
   if(abrir)setTimeout(()=>kx.scrollIntoView({block:"nearest",behavior:"smooth"}),50)}}
+// Tarjeta de apoyo al entrar: aparece tras un momento, la × la quita (solo hasta recargar) y al pulsarla abre Ajustes con el panel de Ko-fi.
+{const kw=$("#kofiW"),cerrar=()=>{kw.classList.add("out");setTimeout(()=>kw.remove(),240)};
+ if(kw){setTimeout(()=>{kw.hidden=false},2500);$("#kofiWx").onclick=cerrar;
+  $("#kofiWo").onclick=()=>{setTab(3);sheet.classList.add("open");const b=$("#kofiB");if(b&&b.getAttribute("aria-expanded")!=="true")b.click();cerrar()}}}
 })();
