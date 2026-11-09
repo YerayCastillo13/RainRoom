@@ -16,6 +16,7 @@ Es una web estática (sin build). Hoy está en Cloudflare (Worker con archivos e
 - `js/rooms.js`: registro de salas (fondo + mezcla de sonidos); añadir una sala = añadir un objeto
 - `assets/audio/`: `rain.mp3`, `wind.mp3`, `fire.mp3`, `traffic.mp3` (bucles sin cortes de 45-60 s), `thunder.mp3` + `thunder.json` (14 truenos sueltos y dónde empieza cada uno). Si un archivo falta, se usa el sonido sintético. Origen y licencias en `LICENCIAS.md`; se regeneran con `tools/build-audio.mjs`
 - `acerca/`, `sonidos/`, `contacto/`, `guias/`, `legal/`: páginas de contenido (necesarias para AdSense). `js/ads.js` y `tools/configurar.mjs`: publicidad y dominio, ver `PUBLICIDAD.md`
+- `js/pages.js`: abre las páginas de contenido como una hoja sobre la sala (el sonido no se corta; Atrás/Esc/arrastrar la cierran). Los enlaces siguen siendo normales y, sin JS o con Ctrl+clic, abren la página completa. Usa el CSS de `guias/guias.css` dentro de un Shadow DOM y `Dimrain.openMix()` de `app.js` para los enlaces «Abrir esta mezcla»
 - `js/widgets.js`: registro de widgets (reloj, dormir, intención); añadir uno = añadir un objeto
 - `assets/scenes/`: fotos de fondo. Si existen `city.jpg`, `forest.jpg` o `lounge.jpg`, sustituyen al dibujo de esa sala (recomendado: 1600 px o más en el lado largo)
 

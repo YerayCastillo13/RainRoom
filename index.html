@@ -56,10 +56,18 @@
 </div>
 <input type="file" id="file" accept="image/*" hidden>
 <div id="msg">Toca la pantalla para activar el sonido</div>
+<div id="pg" hidden>
+ <div class="pgbd"></div>
+ <section class="pgs" role="dialog" aria-modal="true" aria-labelledby="pgt">
+  <div class="pgbar"><button type="button" class="pgx"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Sala</span></button><span id="pgt" class="pgt"></span><span class="pgsnd" role="img" aria-label="El sonido sigue activo" hidden><i></i><i></i><i></i></span></div>
+  <div class="pgc" tabindex="-1"></div>
+ </section>
+</div>
 <script src="js/rooms.js" defer></script>
 <script src="js/anim.js" defer></script>
 <script src="js/widgets.js" defer></script>
 <script src="js/app.js" defer></script>
 <script src="js/ads.js" defer></script>
+<script src="js/pages.js" defer></script>
 <script>(()=>{const d=document.getElementById("dock"),s=document.getElementById("stt"),t=s.lastChild;let on=false;const u=()=>{const n=on?d.querySelectorAll(".snd.on").length:0;s.classList.toggle("on",n>0);t.textContent=n?n+(n>1?" sonidos":" sonido"):"En silencio"};addEventListener("pointerdown",()=>{on=true;u()},{once:true});new MutationObserver(u).observe(d,{subtree:true,attributes:true,attributeFilter:["class"]});u()})()</script>
 </body></html>
